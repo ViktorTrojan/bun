@@ -26,7 +26,7 @@
 
 #include "config.h"
 #include "SerializedScriptValue.h"
-
+#include "BunString.h"
 // #include "BlobRegistry.h"
 // #include "ByteArrayPixelBuffer.h"
 #include "CryptoKeyAES.h"
@@ -890,7 +890,7 @@ public:
         WasmMemoryHandleArray& wasmMemoryHandles,
 #endif
         Vector<uint8_t>& out, SerializationContext context, ArrayBufferContentsArray& sharedBuffers,
-        SerializationForStorage forStorage, SerializationForTransfer forTransfer)
+        SerializationForStorage forStorage, SerializationForCrossProcessTransfer forTransfer)
     {
         CloneSerializer serializer(lexicalGlobalObject, messagePorts, arrayBuffers,
 #if ENABLE(OFFSCREEN_CANVAS_IN_WORKERS)
@@ -992,7 +992,7 @@ private:
         WasmModuleArray& wasmModules,
         WasmMemoryHandleArray& wasmMemoryHandles,
 #endif
-        Vector<uint8_t>& out, SerializationContext context, ArrayBufferContentsArray& sharedBuffers, SerializationForStorage forStorage, SerializationForTransfer forTransfer)
+        Vector<uint8_t>& out, SerializationContext context, ArrayBufferContentsArray& sharedBuffers, SerializationForStorage forStorage, SerializationForCrossProcessTransfer forTransfer)
         : CloneBase(lexicalGlobalObject)
         , m_buffer(out)
         , m_emptyIdentifier(Identifier::fromString(lexicalGlobalObject->vm(), emptyString()))
@@ -1575,6 +1575,8 @@ private:
         }
 
         VM& vm = m_lexicalGlobalObject->vm();
+        auto scope = DECLARE_THROW_SCOPE(vm);
+
         if (isArray(value))
             return false;
 
@@ -1667,7 +1669,6 @@ private:
             }
             if (auto* errorInstance = jsDynamicCast<ErrorInstance*>(obj)) {
                 auto& vm = m_lexicalGlobalObject->vm();
-                auto scope = DECLARE_THROW_SCOPE(vm);
                 auto errorTypeValue = errorInstance->get(m_lexicalGlobalObject, vm.propertyNames->name);
                 RETURN_IF_EXCEPTION(scope, false);
                 auto errorTypeString = errorTypeValue.toWTFString(m_lexicalGlobalObject);
@@ -1676,7 +1677,7 @@ private:
                 String message;
                 PropertyDescriptor messageDescriptor;
                 if (errorInstance->getOwnPropertyDescriptor(m_lexicalGlobalObject, vm.propertyNames->message, messageDescriptor) && messageDescriptor.isDataDescriptor()) {
-                    EXCEPTION_ASSERT(!scope.exception());
+                    scope.assertNoException();
                     message = messageDescriptor.value().toWTFString(m_lexicalGlobalObject);
                 }
                 RETURN_IF_EXCEPTION(scope, false);
@@ -1684,7 +1685,7 @@ private:
                 unsigned line = 0;
                 PropertyDescriptor lineDescriptor;
                 if (errorInstance->getOwnPropertyDescriptor(m_lexicalGlobalObject, vm.propertyNames->line, lineDescriptor) && lineDescriptor.isDataDescriptor()) {
-                    EXCEPTION_ASSERT(!scope.exception());
+                    scope.assertNoException();
                     line = lineDescriptor.value().toNumber(m_lexicalGlobalObject);
                 }
                 RETURN_IF_EXCEPTION(scope, false);
@@ -1692,7 +1693,7 @@ private:
                 unsigned column = 0;
                 PropertyDescriptor columnDescriptor;
                 if (errorInstance->getOwnPropertyDescriptor(m_lexicalGlobalObject, vm.propertyNames->column, columnDescriptor) && columnDescriptor.isDataDescriptor()) {
-                    EXCEPTION_ASSERT(!scope.exception());
+                    scope.assertNoException();
                     column = columnDescriptor.value().toNumber(m_lexicalGlobalObject);
                 }
                 RETURN_IF_EXCEPTION(scope, false);
@@ -1700,7 +1701,7 @@ private:
                 String sourceURL;
                 PropertyDescriptor sourceURLDescriptor;
                 if (errorInstance->getOwnPropertyDescriptor(m_lexicalGlobalObject, vm.propertyNames->sourceURL, sourceURLDescriptor) && sourceURLDescriptor.isDataDescriptor()) {
-                    EXCEPTION_ASSERT(!scope.exception());
+                    scope.assertNoException();
                     sourceURL = sourceURLDescriptor.value().toWTFString(m_lexicalGlobalObject);
                 }
                 RETURN_IF_EXCEPTION(scope, false);
@@ -1708,7 +1709,7 @@ private:
                 String stack;
                 PropertyDescriptor stackDescriptor;
                 if (errorInstance->getOwnPropertyDescriptor(m_lexicalGlobalObject, vm.propertyNames->stack, stackDescriptor) && stackDescriptor.isDataDescriptor()) {
-                    EXCEPTION_ASSERT(!scope.exception());
+                    scope.assertNoException();
                     stack = stackDescriptor.value().toWTFString(m_lexicalGlobalObject);
                 }
                 RETURN_IF_EXCEPTION(scope, false);
@@ -1783,6 +1784,7 @@ private:
                 if (checkForDuplicate(obj))
                     return true;
                 bool success = dumpArrayBufferView(obj, code);
+                RETURN_IF_EXCEPTION(scope, false);
                 recordObject(obj);
                 return success;
             }
@@ -1946,15 +1948,19 @@ private:
 #endif
 
             // write bun types
-            if (auto _cloneable = StructuredCloneableSerialize::fromJS(value)) {
-                if (m_forTransfer == SerializationForTransfer::Yes && !SerializedScriptValue::isTransferable(m_lexicalGlobalObject, value)) {
+            auto _cloneable = StructuredCloneableSerialize::fromJS(value);
+            if (_cloneable) {
+                auto cloneable = _cloneable.value();
+                const bool isTransferCompatible = m_forTransfer == SerializationForCrossProcessTransfer::Yes ? cloneable.isForTransfer : true;
+                const bool isStorageCompatible = m_forStorage == SerializationForStorage::Yes ? cloneable.isForStorage : true;
+                if (!isTransferCompatible || !isStorageCompatible) {
                     write(ObjectTag);
                     write(TerminatorTag);
                     return true;
                 }
-                StructuredCloneableSerialize cloneable = WTFMove(_cloneable.value());
-                write(cloneable.tag);
-                cloneable.write(this, m_lexicalGlobalObject);
+                StructuredCloneableSerialize to_write = WTFMove(_cloneable.value());
+                write(to_write.tag);
+                to_write.write(this, m_lexicalGlobalObject);
                 return true;
             }
 
@@ -1997,7 +2003,6 @@ private:
                     return true;
                 }
                 case CryptoKeyType::Public: {
-                    auto scope = DECLARE_THROW_SCOPE(vm);
                     auto* pkey = handle.asymmetricKey().get();
 
                     BIO* bio = BIO_new(BIO_s_mem());
@@ -2015,7 +2020,6 @@ private:
                     return true;
                 }
                 case CryptoKeyType::Private: {
-                    auto scope = DECLARE_THROW_SCOPE(vm);
                     auto* pkey = handle.asymmetricKey().get();
 
                     BIO* bio = BIO_new(BIO_s_mem());
@@ -2187,7 +2191,7 @@ private:
         unsigned length = str.length();
 
         // Guard against overflow
-        if (length > (std::numeric_limits<uint32_t>::max() - sizeof(uint32_t)) / sizeof(UChar)) {
+        if (length > (std::numeric_limits<uint32_t>::max() - sizeof(uint32_t)) / sizeof(char16_t)) {
             fail();
             return;
         }
@@ -2228,7 +2232,7 @@ private:
     {
         uint32_t size = vector.size();
         write(size);
-        writeLittleEndian(m_buffer, vector.data(), size);
+        writeLittleEndian(m_buffer, vector.begin(), size);
     }
 
     // void write(const File& file)
@@ -2559,7 +2563,7 @@ private:
     Vector<RefPtr<WebCodecsVideoFrame>>& m_serializedVideoFrames;
 #endif
     SerializationForStorage m_forStorage;
-    SerializationForTransfer m_forTransfer;
+    SerializationForCrossProcessTransfer m_forTransfer;
 };
 
 SYSV_ABI void SerializedScriptValue::writeBytesForBun(CloneSerializer* ctx, const uint8_t* data, uint32_t size)
@@ -2608,8 +2612,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
 
                 propertyStack.append(PropertyNameArray(vm, PropertyNameMode::Strings, PrivateSymbolMode::Exclude));
                 array->getOwnNonIndexPropertyNames(m_lexicalGlobalObject, propertyStack.last(), DontEnumPropertiesMode::Exclude);
-                if (scope.exception()) [[unlikely]]
-                    return SerializationReturnCode::ExistingExceptionError;
+                RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
                 if (propertyStack.last().size()) {
                     write(NonIndexPropertiesTag);
                     indexStack.append(0);
@@ -2622,8 +2625,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
                 break;
             }
             inValue = array->getDirectIndex(m_lexicalGlobalObject, index);
-            if (scope.exception()) [[unlikely]]
-                return SerializationReturnCode::ExistingExceptionError;
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
             if (!inValue) {
                 indexStack.last()++;
                 goto arrayStartVisitMember;
@@ -2631,7 +2633,9 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
 
             write(index);
             auto terminalCode = SerializationReturnCode::SuccessfullyCompleted;
-            if (dumpIfTerminal(inValue, terminalCode)) {
+            auto dumped = dumpIfTerminal(inValue, terminalCode);
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
+            if (dumped) {
                 if (terminalCode != SerializationReturnCode::SuccessfullyCompleted)
                     return terminalCode;
                 indexStack.last()++;
@@ -2662,8 +2666,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
             indexStack.append(0);
             propertyStack.append(PropertyNameArray(vm, PropertyNameMode::Strings, PrivateSymbolMode::Exclude));
             inObject->methodTable()->getOwnPropertyNames(inObject, m_lexicalGlobalObject, propertyStack.last(), DontEnumPropertiesMode::Exclude);
-            if (scope.exception()) [[unlikely]]
-                return SerializationReturnCode::ExistingExceptionError;
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
         }
         objectStartVisitMember:
             [[fallthrough]];
@@ -2679,8 +2682,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
                 break;
             }
             inValue = getProperty(object, properties[index]);
-            if (scope.exception()) [[unlikely]]
-                return SerializationReturnCode::ExistingExceptionError;
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
 
             if (!inValue) {
                 // Property was removed during serialisation
@@ -2689,11 +2691,12 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
             }
             write(properties[index]);
 
-            if (scope.exception()) [[unlikely]]
-                return SerializationReturnCode::ExistingExceptionError;
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
 
             auto terminalCode = SerializationReturnCode::SuccessfullyCompleted;
-            if (!dumpIfTerminal(inValue, terminalCode)) {
+            auto dumped = dumpIfTerminal(inValue, terminalCode);
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
+            if (!dumped) {
                 stateStack.append(ObjectEndVisitMember);
                 goto stateUnknown;
             }
@@ -2702,8 +2705,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
             [[fallthrough]];
         }
         case ObjectEndVisitMember: {
-            if (scope.exception()) [[unlikely]]
-                return SerializationReturnCode::ExistingExceptionError;
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
 
             indexStack.last()++;
             goto objectStartVisitMember;
@@ -2716,8 +2718,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
             if (!startMap(inMap))
                 break;
             JSMapIterator* iterator = JSMapIterator::create(m_lexicalGlobalObject, m_lexicalGlobalObject->mapIteratorStructure(), inMap, IterationKind::Entries);
-            if (scope.exception()) [[unlikely]]
-                return SerializationReturnCode::ExistingExceptionError;
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
             m_gcBuffer.appendWithCrashOnOverflow(inMap);
             m_gcBuffer.appendWithCrashOnOverflow(iterator);
             mapIteratorStack.append(iterator);
@@ -2734,8 +2735,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
                 ASSERT(jsDynamicCast<JSMap*>(object));
                 propertyStack.append(PropertyNameArray(vm, PropertyNameMode::Strings, PrivateSymbolMode::Exclude));
                 object->methodTable()->getOwnPropertyNames(object, m_lexicalGlobalObject, propertyStack.last(), DontEnumPropertiesMode::Exclude);
-                if (scope.exception()) [[unlikely]]
-                    return SerializationReturnCode::ExistingExceptionError;
+                RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
                 write(NonMapPropertiesTag);
                 indexStack.append(0);
                 goto objectStartVisitMember;
@@ -2764,8 +2764,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
             if (!startSet(inSet))
                 break;
             JSSetIterator* iterator = JSSetIterator::create(m_lexicalGlobalObject, m_lexicalGlobalObject->setIteratorStructure(), inSet, IterationKind::Keys);
-            if (scope.exception()) [[unlikely]]
-                return SerializationReturnCode::ExistingExceptionError;
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
             m_gcBuffer.appendWithCrashOnOverflow(inSet);
             m_gcBuffer.appendWithCrashOnOverflow(iterator);
             setIteratorStack.append(iterator);
@@ -2782,8 +2781,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
                 ASSERT(jsDynamicCast<JSSet*>(object));
                 propertyStack.append(PropertyNameArray(vm, PropertyNameMode::Strings, PrivateSymbolMode::Exclude));
                 object->methodTable()->getOwnPropertyNames(object, m_lexicalGlobalObject, propertyStack.last(), DontEnumPropertiesMode::Exclude);
-                if (scope.exception()) [[unlikely]]
-                    return SerializationReturnCode::ExistingExceptionError;
+                RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
                 write(NonSetPropertiesTag);
                 indexStack.append(0);
                 goto objectStartVisitMember;
@@ -2799,7 +2797,9 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
         stateUnknown:
         case StateUnknown: {
             auto terminalCode = SerializationReturnCode::SuccessfullyCompleted;
-            if (dumpIfTerminal(inValue, terminalCode)) {
+            auto dumped = dumpIfTerminal(inValue, terminalCode);
+            RETURN_IF_EXCEPTION(scope, SerializationReturnCode::ExistingExceptionError);
+            if (dumped) {
                 if (terminalCode != SerializationReturnCode::SuccessfullyCompleted)
                     return terminalCode;
                 break;
@@ -3338,7 +3338,7 @@ private:
 
     static bool readString(const uint8_t*& ptr, const uint8_t* end, String& str, unsigned length, bool is8Bit)
     {
-        if (length >= std::numeric_limits<int32_t>::max() / sizeof(UChar))
+        if (length >= std::numeric_limits<int32_t>::max() / sizeof(char16_t))
             return false;
 
         if (is8Bit) {
@@ -3349,15 +3349,15 @@ private:
             return true;
         }
 
-        unsigned size = length * sizeof(UChar);
+        unsigned size = length * sizeof(char16_t);
         if ((end - ptr) < static_cast<int>(size))
             return false;
 
 #if ASSUME_LITTLE_ENDIAN
-        str = String({ reinterpret_cast<const UChar*>(ptr), length });
-        ptr += length * sizeof(UChar);
+        str = String({ reinterpret_cast<const char16_t*>(ptr), length });
+        ptr += length * sizeof(char16_t);
 #else
-        std::span<UChar> characters;
+        std::span<char16_t> characters;
         str = String::createUninitialized(length, characters);
         for (unsigned i = 0; i < length; ++i) {
             uint16_t c;
@@ -3384,7 +3384,7 @@ private:
 
     static bool readIdentifier(JSC::VM& vm, const uint8_t*& ptr, const uint8_t* end, Identifier& str, unsigned length, bool is8Bit)
     {
-        if (length >= std::numeric_limits<int32_t>::max() / sizeof(UChar))
+        if (length >= std::numeric_limits<int32_t>::max() / sizeof(char16_t))
             return false;
 
         if (is8Bit) {
@@ -3395,15 +3395,15 @@ private:
             return true;
         }
 
-        unsigned size = length * sizeof(UChar);
+        unsigned size = length * sizeof(char16_t);
         if ((end - ptr) < static_cast<int>(size))
             return false;
 
 #if ASSUME_LITTLE_ENDIAN
-        str = Identifier::fromString(vm, { reinterpret_cast<const UChar*>(ptr), length });
-        ptr += length * sizeof(UChar);
+        str = Identifier::fromString(vm, { reinterpret_cast<const char16_t*>(ptr), length });
+        ptr += length * sizeof(char16_t);
 #else
-        std::span<UChar> characters;
+        std::span<char16_t> characters;
         str = String::createUninitialized(length, characters);
         for (unsigned i = 0; i < length; ++i) {
             uint16_t c;
@@ -4542,7 +4542,7 @@ private:
         }
         ncrypto::ClearErrorOnReturn clear_error_on_return;
         X509* ptr = nullptr;
-        const uint8_t* data = buffer.data();
+        const uint8_t* data = buffer.begin();
 
         auto cert = d2i_X509(&ptr, &data, buffer.size());
         if (!cert) {
@@ -5095,7 +5095,9 @@ private:
             }
 
             RELEASE_ASSERT(m_sharedBuffers->at(index));
-            auto buffer = ArrayBuffer::create(WTFMove(m_sharedBuffers->at(index)));
+            ArrayBufferContents arrayBufferContents;
+            m_sharedBuffers->at(index).shareWith(arrayBufferContents);
+            auto buffer = ArrayBuffer::create(WTFMove(arrayBufferContents));
             JSValue result = getJSValue(buffer.get());
             m_gcBuffer.appendWithCrashOnOverflow(result);
             return result;
@@ -5268,7 +5270,6 @@ DeserializationResult CloneDeserializer::deserialize()
         case ArrayStartState: {
             uint32_t length;
             if (!read(length)) {
-                fail();
                 goto error;
             }
             JSArray* outArray = constructEmptyArray(m_globalObject, static_cast<JSC::ArrayAllocationProfile*>(nullptr), length);
@@ -5282,7 +5283,6 @@ DeserializationResult CloneDeserializer::deserialize()
         case ArrayStartVisitMember: {
             uint32_t index;
             if (!read(index)) {
-                fail();
                 goto error;
             }
             if (index == TerminatorTag) {
@@ -5294,10 +5294,14 @@ DeserializationResult CloneDeserializer::deserialize()
                 goto objectStartVisitMember;
             }
 
-            if (JSValue terminal = readTerminal()) {
+            JSValue terminal = readTerminal();
+            if (scope.exception()) [[unlikely]]
+                goto error;
+            if (m_failed)
+                goto error;
+            if (terminal) {
                 putProperty(outputObjectStack.last(), index, terminal);
                 if (scope.exception()) [[unlikely]] {
-                    fail();
                     goto error;
                 }
                 goto arrayStartVisitMember;
@@ -5312,7 +5316,6 @@ DeserializationResult CloneDeserializer::deserialize()
             JSObject* outArray = outputObjectStack.last();
             putProperty(outArray, indexStack.last(), outValue);
             if (scope.exception()) [[unlikely]] {
-                fail();
                 goto error;
             }
             indexStack.removeLast();
@@ -5341,10 +5344,14 @@ DeserializationResult CloneDeserializer::deserialize()
                 break;
             }
 
-            if (JSValue terminal = readTerminal()) {
+            JSValue terminal = readTerminal();
+            if (scope.exception()) [[unlikely]]
+                goto error;
+            if (m_failed)
+                goto error;
+            if (terminal) {
                 putProperty(outputObjectStack.last(), cachedString->identifier(vm), terminal);
                 if (scope.exception()) [[unlikely]] {
-                    fail();
                     goto error;
                 }
                 goto objectStartVisitMember;
@@ -5384,7 +5391,6 @@ DeserializationResult CloneDeserializer::deserialize()
         case MapDataEndVisitValue: {
             mapStack.last()->set(m_lexicalGlobalObject, mapKeyStack.last(), outValue);
             if (scope.exception()) [[unlikely]] {
-                fail();
                 goto error;
             }
             mapKeyStack.removeLast();
@@ -5413,7 +5419,6 @@ DeserializationResult CloneDeserializer::deserialize()
             JSSet* set = setStack.last();
             set->add(m_lexicalGlobalObject, outValue);
             if (scope.exception()) [[unlikely]] {
-                fail();
                 goto error;
             }
             goto setDataStartVisitEntry;
@@ -5421,7 +5426,12 @@ DeserializationResult CloneDeserializer::deserialize()
 
         stateUnknown:
         case StateUnknown:
-            if (JSValue terminal = readTerminal()) {
+            JSValue terminal = readTerminal();
+            if (scope.exception()) [[unlikely]]
+                goto error;
+            if (m_failed)
+                goto error;
+            if (terminal) {
                 outValue = terminal;
                 break;
             }
@@ -5555,6 +5565,13 @@ SerializedScriptValue::SerializedScriptValue(Vector<uint8_t>&& buffer, std::uniq
     m_memoryCost = computeMemoryCost();
 }
 
+SerializedScriptValue::SerializedScriptValue(const String& fastPathString)
+    : m_fastPathString(fastPathString)
+    , m_isStringFastPath(true)
+{
+    m_memoryCost = computeMemoryCost();
+}
+
 size_t SerializedScriptValue::computeMemoryCost() const
 {
     size_t cost = m_data.size();
@@ -5604,6 +5621,10 @@ size_t SerializedScriptValue::computeMemoryCost() const
 
     // for (auto& handle : m_blobHandles)
     //     cost += handle.url().string().sizeInBytes();
+
+    // Account for fast path string memory usage
+    if (m_isStringFastPath)
+        cost += m_fastPathString.sizeInBytes();
 
     return cost;
 }
@@ -5718,7 +5739,7 @@ static bool canDetachRTCDataChannels(const Vector<Ref<RTCDataChannel>>& channels
 }
 #endif
 
-RefPtr<SerializedScriptValue> SerializedScriptValue::create(JSC::JSGlobalObject& globalObject, JSC::JSValue value, SerializationForStorage forStorage, SerializationErrorMode throwExceptions, SerializationContext serializationContext, SerializationForTransfer forTransfer)
+RefPtr<SerializedScriptValue> SerializedScriptValue::create(JSC::JSGlobalObject& globalObject, JSC::JSValue value, SerializationForStorage forStorage, SerializationErrorMode throwExceptions, SerializationContext serializationContext, SerializationForCrossProcessTransfer forTransfer)
 {
     Vector<RefPtr<MessagePort>> dummyPorts;
     auto result = create(globalObject, value, {}, dummyPorts, forStorage, throwExceptions, serializationContext, forTransfer);
@@ -5733,15 +5754,31 @@ RefPtr<SerializedScriptValue> SerializedScriptValue::create(JSC::JSGlobalObject&
 //     return create(globalObject, value, WTFMove(transferList), messagePorts, forStorage, SerializationErrorMode::NonThrowing, serializationContext);
 // }
 
-ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalObject& globalObject, JSValue value, Vector<JSC::Strong<JSC::JSObject>>&& transferList, Vector<RefPtr<MessagePort>>& messagePorts, SerializationForStorage forStorage, SerializationContext serializationContext, SerializationForTransfer forTransfer)
+ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalObject& globalObject, JSValue value, Vector<JSC::Strong<JSC::JSObject>>&& transferList, Vector<RefPtr<MessagePort>>& messagePorts, SerializationForStorage forStorage, SerializationContext serializationContext, SerializationForCrossProcessTransfer forTransfer)
 {
     return create(globalObject, value, WTFMove(transferList), messagePorts, forStorage, SerializationErrorMode::Throwing, serializationContext, forTransfer);
 }
 
 // ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalObject& lexicalGlobalObject, JSValue value, Vector<JSC::Strong<JSC::JSObject>>&& transferList, SerializationForStorage forStorage, SerializationErrorMode throwExceptions, SerializationContext context)
-ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalObject& lexicalGlobalObject, JSValue value, Vector<JSC::Strong<JSC::JSObject>>&& transferList, Vector<RefPtr<MessagePort>>& messagePorts, SerializationForStorage forStorage, SerializationErrorMode throwExceptions, SerializationContext context, SerializationForTransfer forTransfer)
+ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalObject& lexicalGlobalObject, JSValue value, Vector<JSC::Strong<JSC::JSObject>>&& transferList, Vector<RefPtr<MessagePort>>& messagePorts, SerializationForStorage forStorage, SerializationErrorMode throwExceptions, SerializationContext context, SerializationForCrossProcessTransfer forTransfer)
 {
     VM& vm = lexicalGlobalObject.vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    // Fast path optimization: for postMessage/structuredClone with pure strings and no transfers
+    if ((context == SerializationContext::WorkerPostMessage || context == SerializationContext::WindowPostMessage || context == SerializationContext::Default)
+        && forStorage == SerializationForStorage::No
+        && forTransfer == SerializationForCrossProcessTransfer::No
+        && transferList.isEmpty()
+        && messagePorts.isEmpty()
+        && value.isString()) {
+
+        JSC::JSString* jsString = asString(value);
+        String stringValue = jsString->value(&lexicalGlobalObject);
+        RETURN_IF_EXCEPTION(scope, Exception { TypeError });
+        return SerializedScriptValue::createStringFastPath(stringValue);
+    }
+
     Vector<RefPtr<JSC::ArrayBuffer>> arrayBuffers;
     // Vector<RefPtr<ImageBitmap>> imageBitmaps;
 #if ENABLE(OFFSCREEN_CANVAS_IN_WORKERS)
@@ -5771,7 +5808,7 @@ ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalOb
             if (arrayBuffer->isLocked()) {
                 auto scope = DECLARE_THROW_SCOPE(vm);
                 throwVMTypeError(&lexicalGlobalObject, scope, errorMessageForTransfer(arrayBuffer));
-                return Exception { ExistingExceptionError };
+                RELEASE_AND_RETURN(scope, Exception { ExistingExceptionError });
             }
             arrayBuffers.append(WTFMove(arrayBuffer));
             continue;
@@ -5856,7 +5893,6 @@ ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalOb
     //         wasmMemoryHandles,
     // #endif
     //         blobHandles, buffer, context, *sharedBuffers, forStorage);
-    auto scope = DECLARE_THROW_SCOPE(vm);
     auto code = CloneSerializer::serialize(&lexicalGlobalObject, value, messagePorts, arrayBuffers,
 #if ENABLE(OFFSCREEN_CANVAS_IN_WORKERS)
         offscreenCanvases,
@@ -5884,11 +5920,11 @@ ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalOb
     // If we rethrew an exception just now, or we failed with a status code other than success,
     // we should exit right now.
     if (scope.exception() || code != SerializationReturnCode::SuccessfullyCompleted) [[unlikely]]
-        return exceptionForSerializationFailure(code);
+        RELEASE_AND_RETURN(scope, exceptionForSerializationFailure(code));
 
     auto arrayBufferContentsArray = transferArrayBuffers(vm, arrayBuffers);
     if (arrayBufferContentsArray.hasException()) {
-        return arrayBufferContentsArray.releaseException();
+        RELEASE_AND_RETURN(scope, arrayBufferContentsArray.releaseException());
     }
 
     // auto backingStores = ImageBitmap::detachBitmaps(WTFMove(imageBitmaps));
@@ -5930,6 +5966,7 @@ ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalOb
     //         WTFMove(serializedVideoChunks), WTFMove(serializedVideoFrameData)
     // #endif
     //             ));
+    scope.releaseAssertNoException();
     return adoptRef(*new SerializedScriptValue(WTFMove(buffer), arrayBufferContentsArray.releaseReturnValue(), context == SerializationContext::WorkerPostMessage ? WTFMove(sharedBuffers) : nullptr
 #if ENABLE(OFFSCREEN_CANVAS_IN_WORKERS)
         ,
@@ -5956,6 +5993,11 @@ RefPtr<SerializedScriptValue> SerializedScriptValue::create(StringView string)
     if (!CloneSerializer::serialize(string, buffer))
         return nullptr;
     return adoptRef(*new SerializedScriptValue(WTFMove(buffer)));
+}
+
+Ref<SerializedScriptValue> SerializedScriptValue::createStringFastPath(const String& string)
+{
+    return adoptRef(*new SerializedScriptValue(Bun::toCrossThreadShareable(string)));
 }
 
 RefPtr<SerializedScriptValue> SerializedScriptValue::create(JSContextRef originContext, JSValueRef apiValue, JSValueRef* exception)
@@ -5990,7 +6032,7 @@ Ref<JSC::ArrayBuffer> SerializedScriptValue::toArrayBuffer()
 
     this->ref();
     auto arrayBuffer = ArrayBuffer::createFromBytes(
-        { this->m_data.data(), this->m_data.size() }, createSharedTask<void(void*)>([protectedThis = Ref { *this }](void* p) {
+        { this->m_data.begin(), this->m_data.size() }, createSharedTask<void(void*)>([protectedThis = Ref { *this }](void* p) {
             protectedThis->deref();
         }));
 
@@ -6002,7 +6044,8 @@ Ref<JSC::ArrayBuffer> SerializedScriptValue::toArrayBuffer()
 
 JSC::JSValue SerializedScriptValue::fromArrayBuffer(JSC::JSGlobalObject& domGlobal, JSC::JSGlobalObject* globalObject, JSC::ArrayBuffer* arrayBuffer, size_t byteOffset, size_t maxByteLength, SerializationErrorMode throwExceptions, bool* didFail)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto& vm = JSC::getVM(globalObject);
+    auto throwScope = DECLARE_THROW_SCOPE(vm);
 
     if (!arrayBuffer || arrayBuffer->isDetached()) {
         if (didFail)
@@ -6043,8 +6086,9 @@ JSC::JSValue SerializedScriptValue::fromArrayBuffer(JSC::JSGlobalObject& domGlob
     if (didFail) {
         *didFail = result.second != SerializationReturnCode::SuccessfullyCompleted;
     }
-    if (throwExceptions == SerializationErrorMode::Throwing)
+    if (throwScope.exception() || throwExceptions == SerializationErrorMode::Throwing) [[unlikely]]
         maybeThrowExceptionIfSerializationFailed(*globalObject, result.second);
+    RETURN_IF_EXCEPTION(throwScope, {});
 
     return result.first ? result.first : jsNull();
 }
@@ -6073,6 +6117,13 @@ JSValue SerializedScriptValue::deserialize(JSGlobalObject& lexicalGlobalObject, 
 {
     VM& vm = lexicalGlobalObject.vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
+    // Fast path for string-only values - avoid deserialization overhead
+    if (m_isStringFastPath) {
+        if (didFail)
+            *didFail = false;
+        return jsString(vm, m_fastPathString);
+    }
+
     DeserializationResult result = CloneDeserializer::deserialize(&lexicalGlobalObject, globalObject, messagePorts
 #if ENABLE(OFFSCREEN_CANVAS_IN_WORKERS)
         ,

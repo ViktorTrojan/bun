@@ -1,8 +1,38 @@
 export {};
 
+declare module "stream/web" {
+  interface ReadableStream {
+    /**
+     * Consume a ReadableStream as text
+     */
+    text(): Promise<string>;
+
+    /**
+     * Consume a ReadableStream as a Uint8Array
+     */
+    bytes(): Promise<Uint8Array<ArrayBuffer>>;
+
+    /**
+     * Consume a ReadableStream as JSON
+     */
+    json(): Promise<any>;
+
+    /**
+     * Consume a ReadableStream as a Blob
+     */
+    blob(): Promise<Blob>;
+  }
+}
+
+declare module "url" {
+  interface URLSearchParams {
+    toJSON(): Record<string, string>;
+  }
+}
+
 declare global {
   namespace NodeJS {
-    interface ProcessEnv extends Bun.Env, ImportMetaEnv {}
+    interface ProcessEnv extends Bun.Env {}
 
     interface Process {
       readonly version: string;

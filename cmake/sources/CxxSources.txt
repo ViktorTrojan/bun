@@ -28,6 +28,7 @@ src/bun.js/bindings/BunWorkerGlobalScope.cpp
 src/bun.js/bindings/c-bindings.cpp
 src/bun.js/bindings/CallSite.cpp
 src/bun.js/bindings/CallSitePrototype.cpp
+src/bun.js/bindings/CatchScopeBinding.cpp
 src/bun.js/bindings/CodeCoverage.cpp
 src/bun.js/bindings/ConsoleObject.cpp
 src/bun.js/bindings/Cookie.cpp
@@ -41,6 +42,7 @@ src/bun.js/bindings/DOMURL.cpp
 src/bun.js/bindings/DOMWrapperWorld.cpp
 src/bun.js/bindings/DoubleFormatter.cpp
 src/bun.js/bindings/EncodeURIComponent.cpp
+src/bun.js/bindings/EncodingTables.cpp
 src/bun.js/bindings/ErrorCode.cpp
 src/bun.js/bindings/ErrorStackFrame.cpp
 src/bun.js/bindings/ErrorStackTrace.cpp
@@ -85,6 +87,7 @@ src/bun.js/bindings/JSNodePerformanceHooksHistogramConstructor.cpp
 src/bun.js/bindings/JSNodePerformanceHooksHistogramPrototype.cpp
 src/bun.js/bindings/JSPropertyIterator.cpp
 src/bun.js/bindings/JSS3File.cpp
+src/bun.js/bindings/JSSecrets.cpp
 src/bun.js/bindings/JSSocketAddressDTO.cpp
 src/bun.js/bindings/JSStringDecoder.cpp
 src/bun.js/bindings/JSWrappingFunction.cpp
@@ -92,6 +95,7 @@ src/bun.js/bindings/JSX509Certificate.cpp
 src/bun.js/bindings/JSX509CertificateConstructor.cpp
 src/bun.js/bindings/JSX509CertificatePrototype.cpp
 src/bun.js/bindings/linux_perf_tracing.cpp
+src/bun.js/bindings/MarkedArgumentBufferBinding.cpp
 src/bun.js/bindings/MarkingConstraint.cpp
 src/bun.js/bindings/ModuleLoader.cpp
 src/bun.js/bindings/napi_external.cpp
@@ -99,6 +103,9 @@ src/bun.js/bindings/napi_finalizer.cpp
 src/bun.js/bindings/napi_handle_scope.cpp
 src/bun.js/bindings/napi_type_tag.cpp
 src/bun.js/bindings/napi.cpp
+src/bun.js/bindings/NapiClass.cpp
+src/bun.js/bindings/NapiRef.cpp
+src/bun.js/bindings/NapiWeakValue.cpp
 src/bun.js/bindings/ncrpyto_engine.cpp
 src/bun.js/bindings/ncrypto.cpp
 src/bun.js/bindings/node/crypto/CryptoDhJob.cpp
@@ -166,6 +173,7 @@ src/bun.js/bindings/NodeVM.cpp
 src/bun.js/bindings/NodeVMModule.cpp
 src/bun.js/bindings/NodeVMScript.cpp
 src/bun.js/bindings/NodeVMSourceTextModule.cpp
+src/bun.js/bindings/NodeVMSyntheticModule.cpp
 src/bun.js/bindings/NoOpForTesting.cpp
 src/bun.js/bindings/ObjectBindings.cpp
 src/bun.js/bindings/objects.cpp
@@ -182,12 +190,24 @@ src/bun.js/bindings/ProcessIdentifier.cpp
 src/bun.js/bindings/RegularExpression.cpp
 src/bun.js/bindings/S3Error.cpp
 src/bun.js/bindings/ScriptExecutionContext.cpp
+src/bun.js/bindings/SecretsDarwin.cpp
+src/bun.js/bindings/SecretsLinux.cpp
+src/bun.js/bindings/SecretsWindows.cpp
 src/bun.js/bindings/Serialization.cpp
 src/bun.js/bindings/ServerRouteList.cpp
 src/bun.js/bindings/spawn.cpp
 src/bun.js/bindings/SQLClient.cpp
 src/bun.js/bindings/sqlite/JSSQLStatement.cpp
+src/bun.js/bindings/stripANSI.cpp
 src/bun.js/bindings/Strong.cpp
+src/bun.js/bindings/TextCodec.cpp
+src/bun.js/bindings/TextCodecCJK.cpp
+src/bun.js/bindings/TextCodecReplacement.cpp
+src/bun.js/bindings/TextCodecSingleByte.cpp
+src/bun.js/bindings/TextCodecUserDefined.cpp
+src/bun.js/bindings/TextCodecWrapper.cpp
+src/bun.js/bindings/TextEncoding.cpp
+src/bun.js/bindings/TextEncodingRegistry.cpp
 src/bun.js/bindings/Uint8Array.cpp
 src/bun.js/bindings/Undici.cpp
 src/bun.js/bindings/URLDecomposition.cpp
@@ -345,6 +365,7 @@ src/bun.js/bindings/webcore/JSTextEncoderStream.cpp
 src/bun.js/bindings/webcore/JSTransformStream.cpp
 src/bun.js/bindings/webcore/JSTransformStreamDefaultController.cpp
 src/bun.js/bindings/webcore/JSURLSearchParams.cpp
+src/bun.js/bindings/webcore/JSWasmStreamingCompiler.cpp
 src/bun.js/bindings/webcore/JSWebSocket.cpp
 src/bun.js/bindings/webcore/JSWorker.cpp
 src/bun.js/bindings/webcore/JSWorkerOptions.cpp

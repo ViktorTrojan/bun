@@ -1,11 +1,21 @@
 /**
  * See `./expectBundled.md` for how this works.
  */
-import { BuildConfig, BuildOutput, BunPlugin, fileURLToPath, PluginBuilder, Loader } from "bun";
+import { BuildConfig, BuildOutput, BunPlugin, fileURLToPath, PluginBuilder, Loader, CompileBuildOptions } from "bun";
 import { callerSourceOrigin } from "bun:jsc";
 import type { Matchers } from "bun:test";
 import * as esbuild from "esbuild";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmdirSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
 import { bunEnv, bunExe, isCI, isDebug } from "harness";
 import { tmpdir } from "os";
 import path from "path";
@@ -138,7 +148,8 @@ export interface BundlerTestInput {
   /** Use when doing something weird with entryPoints and you need to check other output paths. */
   outputPaths?: string[];
   /** Use --compile */
-  compile?: boolean;
+
+  compile?: boolean | string | CompileBuildOptions;
 
   /** force using cli or js api. defaults to api if possible, then cli otherwise */
   backend?: "cli" | "api";
@@ -683,6 +694,9 @@ function expectBundled(
               ...(entryPointsRaw ?? []),
               bundling === false ? "--no-bundle" : [],
               compile ? "--compile" : [],
+              compile && typeof compile === "object" && "execArgv" in compile
+                ? `--compile-exec-argv=${Array.isArray(compile.execArgv) ? compile.execArgv.join(" ") : compile.execArgv}`
+                : [],
               outfile ? `--outfile=${outfile}` : `--outdir=${outdir}`,
               define && Object.entries(define).map(([k, v]) => ["--define", `${k}=${v}`]),
               `--target=${target}`,
@@ -826,10 +840,13 @@ function expectBundled(
       }
 
       const bundlerEnv = { ...bunEnv, ...env };
-      // remove undefined keys instead of passing "undefined"
+      // remove undefined keys instead of passing "undefined" and resolve {{root}}
       for (const key in bundlerEnv) {
-        if (bundlerEnv[key] === undefined) {
+        const value = bundlerEnv[key];
+        if (value === undefined) {
           delete bundlerEnv[key];
+        } else if (typeof value === "string") {
+          bundlerEnv[key] = value.replaceAll("{{root}}", root);
         }
       }
 
@@ -1007,6 +1024,19 @@ function expectBundled(
       if (!ESBUILD) {
         const buildOutDir = useOutFile ? path.dirname(outfile!) : outdir!;
 
+        if (outfile && compile) {
+          if (typeof compile === "boolean" && compile) {
+            compile = {
+              outfile: outfile,
+            };
+          } else if (typeof compile === "string") {
+            compile = {
+              target: compile,
+              outfile: outfile,
+            };
+          }
+        }
+
         const buildConfig = {
           entrypoints: [...entryPaths, ...(entryPointsRaw ?? [])],
           external,
@@ -1034,6 +1064,7 @@ function expectBundled(
           drop,
           define: define ?? {},
           throw: false,
+          compile,
         } as BuildConfig;
 
         if (dotenv) {
@@ -1594,11 +1625,6 @@ for (const [key, blob] of build.outputs) {
 
           // no idea why this logs. ¯\_(ツ)_/¯
           result = result.replace(/\[Event_?Loop\] enqueueTaskConcurrent\(RuntimeTranspilerStore\)\n/gi, "");
-          // when the inspector runs (can be due to VSCode extension), there is
-          // a bug that in debug modes the console logs extra stuff
-          if (name === "stderr" && process.env.BUN_INSPECT_CONNECT_TO) {
-            result = result.replace(/(?:^|\n)\/[^\n]*: CONSOLE LOG[^\n]*(\n|$)/g, "$1").trim();
-          }
 
           if (typeof expected === "string") {
             expected = dedent(expected).trim();
@@ -1636,6 +1662,8 @@ for (const [key, blob] of build.outputs) {
         }
       }
     }
+
+    rmdirSync(root, { recursive: true });
 
     return testRef(id, opts);
   })();

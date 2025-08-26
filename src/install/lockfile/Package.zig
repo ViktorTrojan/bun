@@ -70,7 +70,7 @@ pub const Package = extern struct {
         }
     };
 
-    const debug = Output.scoped(.Lockfile, true);
+    const debug = Output.scoped(.Lockfile, .hidden);
 
     pub fn clone(
         this: *const Package,
@@ -828,14 +828,10 @@ pub const Package = extern struct {
                     // - shifted by a constant offset
                     while (to_i < to_deps.len) : (to_i += 1) {
                         if (from_dep.name_hash == to_deps[to_i].name_hash) {
-                            const from_is_workspace_only = from_dep.behavior.isWorkspaceOnly();
-                            const to_is_workspace_only = to_deps[to_i].behavior.isWorkspaceOnly();
+                            const from_behavior = from_dep.behavior;
+                            const to_behavior = to_deps[to_i].behavior;
 
-                            if (from_is_workspace_only and to_is_workspace_only) {
-                                break :found;
-                            }
-
-                            if (from_is_workspace_only or to_is_workspace_only) {
+                            if (from_behavior != to_behavior) {
                                 continue;
                             }
 
@@ -847,14 +843,10 @@ pub const Package = extern struct {
                     to_i = 0;
                     while (to_i < prev_i) : (to_i += 1) {
                         if (from_dep.name_hash == to_deps[to_i].name_hash) {
-                            const from_is_workspace_only = from_dep.behavior.isWorkspaceOnly();
-                            const to_is_workspace_only = to_deps[to_i].behavior.isWorkspaceOnly();
+                            const from_behavior = from_dep.behavior;
+                            const to_behavior = to_deps[to_i].behavior;
 
-                            if (from_is_workspace_only and to_is_workspace_only) {
-                                break :found;
-                            }
-
-                            if (from_is_workspace_only or to_is_workspace_only) {
+                            if (from_behavior != to_behavior) {
                                 continue;
                             }
 
@@ -885,62 +877,69 @@ pub const Package = extern struct {
                     }
 
                     if (id_mapping) |mapping| {
-                        const version = to_deps[to_i].version;
-                        const update_mapping = switch (version.tag) {
-                            .workspace => if (to_lockfile.workspace_paths.getPtr(from_dep.name_hash)) |path_ptr| brk: {
-                                const path = to_lockfile.str(path_ptr);
-                                var local_buf: bun.PathBuffer = undefined;
-                                const package_json_path = Path.joinAbsStringBuf(FileSystem.instance.top_level_dir, &local_buf, &.{ path, "package.json" }, .auto);
+                        const update_mapping = update_mapping: {
+                            if (!is_root or !from_dep.behavior.isWorkspace()) {
+                                break :update_mapping true;
+                            }
 
-                                const source = bun.sys.File.toSource(package_json_path, allocator, .{}).unwrap() catch {
-                                    // Can't guarantee this workspace still exists
-                                    break :brk false;
-                                };
+                            const workspace_path = to_lockfile.workspace_paths.getPtr(from_dep.name_hash) orelse {
+                                break :update_mapping false;
+                            };
 
-                                var workspace = Package{};
+                            var package_json_path: bun.AbsPath(.{ .sep = .auto }) = .initTopLevelDir();
+                            defer package_json_path.deinit();
 
-                                const json = pm.workspace_package_json_cache.getWithSource(bun.default_allocator, log, source, .{}).unwrap() catch break :brk false;
+                            package_json_path.append(workspace_path.slice(to_lockfile.buffers.string_bytes.items));
+                            package_json_path.append("package.json");
 
-                                var resolver: void = {};
-                                try workspace.fromJson(
-                                    to_lockfile,
-                                    pm,
-                                    allocator,
-                                    log,
-                                    source,
-                                    json.root,
-                                    void,
-                                    &resolver,
-                                    Features.workspace,
-                                );
+                            const source = &(bun.sys.File.toSource(package_json_path.sliceZ(), allocator, .{}).unwrap() catch {
+                                break :update_mapping false;
+                            });
 
-                                to_deps = to.dependencies.get(to_lockfile.buffers.dependencies.items);
+                            var workspace_pkg: Package = .{};
 
-                                var from_pkg = from_lockfile.packages.get(from_resolutions[i]);
-                                const diff = try generate(
-                                    pm,
-                                    allocator,
-                                    log,
-                                    from_lockfile,
-                                    to_lockfile,
-                                    &from_pkg,
-                                    &workspace,
-                                    update_requests,
-                                    null,
-                                );
+                            const json = pm.workspace_package_json_cache.getWithSource(bun.default_allocator, log, source, .{}).unwrap() catch {
+                                break :update_mapping false;
+                            };
 
-                                if (PackageManager.verbose_install and (diff.add + diff.remove + diff.update) > 0) {
-                                    Output.prettyErrorln("Workspace package \"{s}\" has added <green>{d}<r> dependencies, removed <red>{d}<r> dependencies, and updated <cyan>{d}<r> dependencies", .{
-                                        path,
-                                        diff.add,
-                                        diff.remove,
-                                        diff.update,
-                                    });
-                                }
+                            var resolver: void = {};
+                            try workspace_pkg.parseWithJSON(
+                                to_lockfile,
+                                pm,
+                                allocator,
+                                log,
+                                source,
+                                json.root,
+                                void,
+                                &resolver,
+                                Features.workspace,
+                            );
 
-                                break :brk !diff.hasDiffs();
-                            } else false,
-                            else => true,
+                            to_deps = to.dependencies.get(to_lockfile.buffers.dependencies.items);
+
+                            var from_pkg = from_lockfile.packages.get(from_resolutions[i]);
+                            const diff = try generate(
+                                pm,
+                                allocator,
+                                log,
+                                from_lockfile,
+                                to_lockfile,
+                                &from_pkg,
+                                &workspace_pkg,
+                                update_requests,
+                                null,
+                            );
+
+                            if (pm.options.log_level.isVerbose() and (diff.add + diff.remove + diff.update) > 0) {
+                                Output.prettyErrorln("Workspace package \"{s}\" has added <green>{d}<r> dependencies, removed <red>{d}<r> dependencies, and updated <cyan>{d}<r> dependencies", .{
+                                    workspace_path.slice(to_lockfile.buffers.string_bytes.items),
+                                    diff.add,
+                                    diff.remove,
+                                    diff.update,
+                                });
+                            }
+
+                            break :update_mapping !diff.hasDiffs();
                         };
 
                         if (update_mapping) {
@@ -991,13 +990,13 @@ pub const Package = extern struct {
         pm: *PackageManager,
         allocator: Allocator,
         log: *logger.Log,
-        source: logger.Source,
+        source: *const logger.Source,
         comptime ResolverContext: type,
         resolver: *ResolverContext,
         comptime features: Features,
     ) !void {
         initializeStore();
-        const json = JSON.parsePackageJSONUTF8(&source, log, allocator) catch |err| {
+        const json = JSON.parsePackageJSONUTF8(source, log, allocator) catch |err| {
             log.print(Output.errorWriter()) catch {};
             Output.prettyErrorln("<r><red>{s}<r> parsing package.json in <b>\"{s}\"<r>", .{ @errorName(err), source.path.prettyDir() });
             Global.crash();
@@ -1021,13 +1020,12 @@ pub const Package = extern struct {
         pm: *PackageManager,
         allocator: Allocator,
         log: *logger.Log,
-        source: logger.Source,
+        source: *const logger.Source,
         comptime group: DependencyGroup,
         string_builder: *StringBuilder,
         comptime features: Features,
         package_dependencies: []Dependency,
         dependencies_count: u32,
-        in_workspace: bool,
         comptime tag: ?Dependency.Version.Tag,
         workspace_ver: ?Semver.Version,
         external_alias: ExternalString,
@@ -1127,7 +1125,7 @@ pub const Package = extern struct {
             .npm => {
                 const npm = dependency_version.value.npm;
                 if (workspace_version != null) {
-                    if (npm.version.satisfies(workspace_version.?, buf, buf)) {
+                    if (pm.options.link_workspace_packages and npm.version.satisfies(workspace_version.?, buf, buf)) {
                         const path = workspace_path.?.sliced(buf);
                         if (Dependency.parseWithTag(
                             allocator,
@@ -1145,9 +1143,9 @@ pub const Package = extern struct {
                     } else {
                         // It doesn't satisfy, but a workspace shares the same name. Override the workspace with the other dependency
                         for (package_dependencies[0..dependencies_count]) |*dep| {
-                            if (dep.name_hash == name_hash and dep.version.tag == .workspace) {
+                            if (dep.name_hash == name_hash and dep.behavior.isWorkspace()) {
                                 dep.* = .{
-                                    .behavior = if (in_workspace) group.behavior.add(.workspace) else group.behavior,
+                                    .behavior = group.behavior,
                                     .name = external_alias.value,
                                     .name_hash = external_alias.hash,
                                     .version = dependency_version,
@@ -1178,7 +1176,7 @@ pub const Package = extern struct {
                         // workspace is not required to have a version, but if it does
                         // and this version doesn't match it, fail to install
                         try log.addErrorFmt(
-                            &source,
+                            source,
                             logger.Loc.Empty,
                             allocator,
                             "No matching version for workspace dependency \"{s}\". Version: \"{s}\"",
@@ -1259,7 +1257,7 @@ pub const Package = extern struct {
         }
 
         const this_dep = Dependency{
-            .behavior = if (in_workspace) group.behavior.add(.workspace) else group.behavior,
+            .behavior = group.behavior,
             .name = external_alias.value,
             .name_hash = external_alias.hash,
             .version = dependency_version,
@@ -1284,11 +1282,11 @@ pub const Package = extern struct {
 
                     notes[0] = .{
                         .text = try std.fmt.allocPrint(lockfile.allocator, "\"{s}\" originally specified here", .{external_alias.slice(buf)}),
-                        .location = logger.Location.initOrNull(&source, source.rangeOfString(entry.value_ptr.*)),
+                        .location = logger.Location.initOrNull(source, source.rangeOfString(entry.value_ptr.*)),
                     };
 
                     try log.addRangeWarningFmtWithNotes(
-                        &source,
+                        source,
                         source.rangeOfString(key_loc),
                         lockfile.allocator,
                         notes,
@@ -1310,7 +1308,7 @@ pub const Package = extern struct {
         pm: *PackageManager,
         allocator: Allocator,
         log: *logger.Log,
-        source: logger.Source,
+        source: *const logger.Source,
         json: Expr,
         comptime ResolverContext: type,
         resolver: *ResolverContext,
@@ -1476,7 +1474,7 @@ pub const Package = extern struct {
                 switch (dependencies_q.expr.data) {
                     .e_array => |arr| {
                         if (!group.behavior.isWorkspace()) {
-                            log.addErrorFmt(&source, dependencies_q.loc, allocator,
+                            log.addErrorFmt(source, dependencies_q.loc, allocator,
                                 \\{0s} expects a map of specifiers, e.g.
                                 \\  <r><green>"{0s}"<r>: {{
                                 \\    <green>"bun"<r>: <green>"latest"<r>
@@ -1489,7 +1487,7 @@ pub const Package = extern struct {
                             &pm.workspace_package_json_cache,
                             log,
                             arr,
-                            &source,
+                            source,
                             dependencies_q.loc,
                             &string_builder,
                         );
@@ -1507,7 +1505,7 @@ pub const Package = extern struct {
                             //
                             if (obj.get("packages")) |packages_query| {
                                 if (packages_query.data != .e_array) {
-                                    log.addErrorFmt(&source, packages_query.loc, allocator,
+                                    log.addErrorFmt(source, packages_query.loc, allocator,
                                         // TODO: what if we could comptime call the syntax highlighter
                                         \\"workspaces.packages" expects an array of strings, e.g.
                                         \\  "workspaces": {{
@@ -1523,7 +1521,7 @@ pub const Package = extern struct {
                                     &pm.workspace_package_json_cache,
                                     log,
                                     packages_query.data.e_array,
-                                    &source,
+                                    source,
                                     packages_query.loc,
                                     &string_builder,
                                 );
@@ -1534,7 +1532,7 @@ pub const Package = extern struct {
                         for (obj.properties.slice()) |item| {
                             const key = item.key.?.asString(allocator).?;
                             const value = item.value.?.asString(allocator) orelse {
-                                log.addErrorFmt(&source, item.value.?.loc, allocator,
+                                log.addErrorFmt(source, item.value.?.loc, allocator,
                                     // TODO: what if we could comptime call the syntax highlighter
                                     \\{0s} expects a map of specifiers, e.g.
                                     \\  <r><green>"{0s}"<r>: {{
@@ -1557,7 +1555,7 @@ pub const Package = extern struct {
                     },
                     else => {
                         if (group.behavior.isWorkspace()) {
-                            log.addErrorFmt(&source, dependencies_q.loc, allocator,
+                            log.addErrorFmt(source, dependencies_q.loc, allocator,
                                 // TODO: what if we could comptime call the syntax highlighter
                                 \\"workspaces" expects an array of strings, e.g.
                                 \\  <r><green>"workspaces"<r>: [
@@ -1565,7 +1563,7 @@ pub const Package = extern struct {
                                 \\  ]
                             , .{}) catch {};
                         } else {
-                            log.addErrorFmt(&source, dependencies_q.loc, allocator,
+                            log.addErrorFmt(source, dependencies_q.loc, allocator,
                                 \\{0s} expects a map of specifiers, e.g.
                                 \\  <r><green>"{0s}"<r>: {{
                                 \\    <green>"bun"<r>: <green>"latest"<r>
@@ -1586,7 +1584,7 @@ pub const Package = extern struct {
                         try lockfile.trusted_dependencies.?.ensureUnusedCapacity(allocator, arr.items.len);
                         for (arr.slice()) |item| {
                             const name = item.asString(allocator) orelse {
-                                log.addErrorFmt(&source, q.loc, allocator,
+                                log.addErrorFmt(source, q.loc, allocator,
                                     \\trustedDependencies expects an array of strings, e.g.
                                     \\  <r><green>"trustedDependencies"<r>: [
                                     \\    <green>"package_name"<r>
@@ -1598,7 +1596,7 @@ pub const Package = extern struct {
                         }
                     },
                     else => {
-                        log.addErrorFmt(&source, q.loc, allocator,
+                        log.addErrorFmt(source, q.loc, allocator,
                             \\trustedDependencies expects an array of strings, e.g.
                             \\  <r><green>"trustedDependencies"<r>: [
                             \\    <green>"package_name"<r>
@@ -1651,6 +1649,10 @@ pub const Package = extern struct {
                     };
                 }
             }
+
+            // Count catalog strings in top-level package.json as well, since parseAppend
+            // might process them later if no catalogs were found in workspaces
+            lockfile.catalogs.parseCount(lockfile, json, &string_builder);
         }
 
         try string_builder.allocate();
@@ -1832,7 +1834,6 @@ pub const Package = extern struct {
         }
 
         total_dependencies_count = 0;
-        const in_workspace = lockfile.workspace_paths.contains(package.name_hash);
 
         inline for (dependency_groups) |group| {
             if (group.behavior.isWorkspace()) {
@@ -1921,7 +1922,6 @@ pub const Package = extern struct {
                         features,
                         package_dependencies,
                         total_dependencies_count,
-                        in_workspace,
                         .workspace,
                         workspace_version,
                         external_name,
@@ -1964,7 +1964,6 @@ pub const Package = extern struct {
                                     features,
                                     package_dependencies,
                                     total_dependencies_count,
-                                    in_workspace,
                                     null,
                                     null,
                                     external_name,
@@ -2013,15 +2012,20 @@ pub const Package = extern struct {
         // This function depends on package.dependencies being set, so it is done at the very end.
         if (comptime features.is_main) {
             try lockfile.overrides.parseAppend(pm, lockfile, package, log, source, json, &string_builder);
+
+            var found_any_catalog_or_catalog_object = false;
+            var has_workspaces = false;
             if (json.get("workspaces")) |workspaces_expr| {
-                try lockfile.catalogs.parseAppend(pm, lockfile, log, &source, workspaces_expr, &string_builder);
-                if (workspaces_expr.get("nohoist")) |nohoist_expr| {
-                    lockfile.nohoist_patterns.clearRetainingCapacity();
-                    try lockfile.nohoist_patterns.ensureTotalCapacity(allocator, nohoist_expr.data.e_array.items.len);
-                    for (nohoist_expr.data.e_array.slice()) |pattern_expr| {
-                        lockfile.nohoist_patterns.appendAssumeCapacity(string_builder.append(String, pattern_expr.data.e_string.slice(allocator)));
-                    }
-                }
+                found_any_catalog_or_catalog_object = try lockfile.catalogs.parseAppend(pm, lockfile, log, source, workspaces_expr, &string_builder);
+                has_workspaces = true;
+            }
+
+            // `"workspaces"` being an object instead of an array is sometimes
+            // unexpected to people. therefore if you also are using workspaces,
+            // allow "catalog" and "catalogs" in top-level "package.json"
+            // so it's easier to guess.
+            if (!found_any_catalog_or_catalog_object and has_workspaces) {
+                _ = try lockfile.catalogs.parseAppend(pm, lockfile, log, source, json, &string_builder);
             }
         }
 
@@ -2203,49 +2207,54 @@ pub const Package = extern struct {
     };
 };
 
-const TrustedDependenciesSet = Lockfile.TrustedDependenciesSet;
-const Aligner = install.Aligner;
+const string = []const u8;
+
+const std = @import("std");
 const Allocator = std.mem.Allocator;
+
+const bun = @import("bun");
 const ArrayIdentityContext = bun.ArrayIdentityContext;
-const Behavior = Dependency.Behavior;
-const Bin = install.Bin;
-const Cloner = Lockfile.Cloner;
-const Dependency = bun.install.Dependency;
-const DependencySlice = Lockfile.DependencySlice;
 const Environment = bun.Environment;
-const Expr = bun.JSAst.Expr;
+const Global = bun.Global;
+const JSON = bun.json;
+const Output = bun.Output;
+const PackageJSON = bun.PackageJSON;
+const Path = bun.path;
+const assert = bun.assert;
+const logger = bun.logger;
+const strings = bun.strings;
+const Expr = bun.ast.Expr;
+const FileSystem = bun.fs.FileSystem;
+
+const Semver = bun.Semver;
 const ExternalString = Semver.ExternalString;
+const String = Semver.String;
+
+const install = bun.install;
+const Aligner = install.Aligner;
+const Bin = install.Bin;
 const ExternalStringList = install.ExternalStringList;
 const ExternalStringMap = install.ExternalStringMap;
 const Features = install.Features;
-const FileSystem = bun.fs.FileSystem;
-const Global = bun.Global;
-const JSAst = bun.JSAst;
-const JSON = bun.JSON;
-const Lockfile = install.Lockfile;
 const Npm = install.Npm;
-const Output = bun.Output;
 const PackageID = bun.install.PackageID;
-const PackageIDSlice = Lockfile.PackageIDSlice;
-const PackageJSON = bun.PackageJSON;
 const PackageManager = install.PackageManager;
 const PackageNameHash = install.PackageNameHash;
-const Path = bun.path;
 const Repository = install.Repository;
 const Resolution = bun.install.Resolution;
-const Semver = bun.Semver;
-const Stream = Lockfile.Stream;
-const String = Semver.String;
-const StringBuilder = Lockfile.StringBuilder;
 const TruncatedPackageNameHash = install.TruncatedPackageNameHash;
-const assert = bun.assert;
-const assertNoUninitializedPadding = Lockfile.assertNoUninitializedPadding;
-const bun = @import("bun");
-const default_trusted_dependencies = Lockfile.default_trusted_dependencies;
 const initializeStore = install.initializeStore;
-const install = bun.install;
 const invalid_package_id = install.invalid_package_id;
-const logger = bun.logger;
-const std = @import("std");
-const string = []const u8;
-const strings = bun.strings;
+
+const Dependency = bun.install.Dependency;
+const Behavior = Dependency.Behavior;
+
+const Lockfile = install.Lockfile;
+const Cloner = Lockfile.Cloner;
+const DependencySlice = Lockfile.DependencySlice;
+const PackageIDSlice = Lockfile.PackageIDSlice;
+const Stream = Lockfile.Stream;
+const StringBuilder = Lockfile.StringBuilder;
+const TrustedDependenciesSet = Lockfile.TrustedDependenciesSet;
+const assertNoUninitializedPadding = Lockfile.assertNoUninitializedPadding;
+const default_trusted_dependencies = Lockfile.default_trusted_dependencies;

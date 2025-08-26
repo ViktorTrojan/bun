@@ -10,6 +10,33 @@ type BunWatchListener<T> = (event: WatchEventType, filename: T | undefined) => v
  */
 declare function $bundleError(...message: any[]): never;
 
+declare module "bun" {
+  namespace SQL.__internal {
+    type Define<T, K extends keyof T = never> = T & {
+      [Key in K | "adapter"]: NonNullable<T[Key]>;
+    } & {};
+
+    type Adapter = NonNullable<Bun.SQL.Options["adapter"]>;
+
+    /**
+     * Represents the result of the `parseOptions()` function in the sqlite path
+     */
+    type DefinedSQLiteOptions = Define<Bun.SQL.SQLiteOptions, "filename">;
+
+    /**
+     * Represents the result of the `parseOptions()` function in the postgres path
+     */
+    type DefinedPostgresOptions = Define<Bun.SQL.PostgresOptions, "max" | "prepare" | "max"> & {
+      sslMode: import("internal/sql/shared").SSLMode;
+      query: string;
+    };
+
+    type DefinedMySQLOptions = DefinedPostgresOptions;
+
+    type DefinedOptions = DefinedSQLiteOptions | DefinedPostgresOptions | DefinedMySQLOptions;
+  }
+}
+
 interface BunFSWatcher {
   /**
    * Stop watching for changes on the given `BunFSWatcher`. Once stopped, the `BunFSWatcher` object is no longer usable.
@@ -217,7 +244,7 @@ declare function $newZigFunction<T = (...args: any) => any>(
 /**
  * Retrieves a handle to a function defined in Zig or C++, defined in a
  * `.bind.ts` file. For more information on how to define bindgen functions, see
- * [bindgen's documentation](https://bun.sh/docs/project/bindgen).
+ * [bindgen's documentation](https://bun.com/docs/project/bindgen).
  * @param filename - The basename of the `.bind.ts` file.
  * @param symbol - The name of the function to call.
  */
@@ -229,5 +256,11 @@ declare module "node:net" {
 
   interface Socket {
     _handle: Bun.Socket<{ self: Socket; req?: object }> | null;
+    server: Server | null;
+  }
+
+  interface Server {
+    _handle: Bun.SocketListener<Socket> | null;
+    _connections: number;
   }
 }
