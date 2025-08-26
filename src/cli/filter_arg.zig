@@ -275,11 +275,11 @@ pub const PackageFilterIterator = struct {
 
 const string = []const u8;
 
-const glob = bun.glob;
 const std = @import("std");
 
 const bun = @import("bun");
 const Global = bun.Global;
 const JSON = bun.json;
 const Output = bun.Output;
+const glob = bun.glob;
 const strings = bun.strings;

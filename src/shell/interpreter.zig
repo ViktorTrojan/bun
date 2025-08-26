@@ -1957,7 +1957,6 @@ pub fn unreachableState(context: []const u8, state: []const u8) noreturn {
     return bun.Output.panic("Bun shell has reached an unreachable state \"{s}\" in the {s} context. This indicates a bug, please open a GitHub issue.", .{ state, context });
 }
 
-const Glob = @import("../glob.zig");
 const builtin = @import("builtin");
 const WTFStringImplStruct = @import("../string.zig").WTFStringImplStruct;
 

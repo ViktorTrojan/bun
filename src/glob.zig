@@ -1,4 +1,3 @@
-const std = @import("std");
 pub const match = @import("./glob/match.zig").match;
 pub const walk = @import("./glob/GlobWalker.zig");
 pub const GlobWalker = walk.GlobWalker_;
@@ -37,3 +36,5 @@ pub fn detectGlobSyntax(potential_pattern: []const u8) bool {
 
     return false;
 }
+
+const std = @import("std");
