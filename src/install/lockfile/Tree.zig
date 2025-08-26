@@ -411,7 +411,7 @@ pub fn isFilteredDependencyOrWorkspace(
             },
         };
 
-        switch (bun.glob.match(undefined, pattern, name_or_path)) {
+        switch (bun.glob.match(pattern, name_or_path)) {
             .match, .negate_match => workspace_matched = true,
 
             .negate_no_match => {
@@ -602,7 +602,7 @@ pub fn processSubtree(
                 trees[dest.id].dependencies.len += 1;
                 if (builder.resolution_lists[pkg_id].len > 0) {
                     const next_subtree_kind: SubtreeKind = switch (subtree_kind) {
-                        .root => if (dependency.behavior.isWorkspaceOnly()) .workspace else .root_direct_dependency,
+                        .root => if (dependency.behavior.isWorkspace()) .workspace else .root_direct_dependency,
                         .root_direct_dependency => .root_transitive,
                         .root_transitive => .root_transitive,
                         .workspace => .workspace_direct_dependency,

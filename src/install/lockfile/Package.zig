@@ -527,8 +527,6 @@ pub const Package = extern struct {
             update: u32 = 0,
             overrides_changed: bool = false,
             catalogs_changed: bool = false,
-            nohoist_changed: bool = false,
-            hoisting_limits_changed: bool = false,
 
             // bool for if this dependency should be added to lockfile trusted dependencies.
             // it is false when the new trusted dependency is coming from the default list.
@@ -547,8 +545,6 @@ pub const Package = extern struct {
                 return this.add > 0 or this.remove > 0 or this.update > 0 or
                     this.overrides_changed or
                     this.catalogs_changed or
-                    this.nohoist_changed or
-                    this.hoisting_limits_changed or
                     this.added_trusted_dependencies.count() > 0 or
                     this.removed_trusted_dependencies.count() > 0 or
                     this.patched_dependencies_changed;
@@ -665,37 +661,6 @@ pub const Package = extern struct {
                             }
                         }
                     }
-                }
-
-                nohoist: {
-                    if (from_lockfile.nohoist_patterns.items.len != to_lockfile.nohoist_patterns.items.len) {
-                        summary.nohoist_changed = true;
-                        break :nohoist;
-                    }
-
-                    const Sorter = String.Sorter(.asc);
-                    var sorter: Sorter = .{
-                        .lhs_buf = from_lockfile.buffers.string_bytes.items,
-                        .rhs_buf = from_lockfile.buffers.string_bytes.items,
-                    };
-                    std.sort.pdq(String, from_lockfile.nohoist_patterns.items, sorter, Sorter.lessThan);
-                    sorter = .{
-                        .lhs_buf = to_lockfile.buffers.string_bytes.items,
-                        .rhs_buf = to_lockfile.buffers.string_bytes.items,
-                    };
-                    std.sort.pdq(String, to_lockfile.nohoist_patterns.items, sorter, Sorter.lessThan);
-
-                    for (from_lockfile.nohoist_patterns.items, to_lockfile.nohoist_patterns.items) |from_pattern, to_pattern| {
-                        if (!from_pattern.eql(to_pattern, from_lockfile.buffers.string_bytes.items, to_lockfile.buffers.string_bytes.items)) {
-                            summary.nohoist_changed = true;
-                            break :nohoist;
-                        }
-                    }
-                }
-
-                // hoistingLimits
-                if (from_lockfile.hoisting_limits != to_lockfile.hoisting_limits) {
-                    summary.hoisting_limits_changed = true;
                 }
             }
 
@@ -903,7 +868,7 @@ pub const Package = extern struct {
                             };
 
                             var resolver: void = {};
-                            try workspace_pkg.parseWithJSON(
+                            try workspace_pkg.fromJson(
                                 to_lockfile,
                                 pm,
                                 allocator,
@@ -1623,14 +1588,14 @@ pub const Package = extern struct {
                                         string_builder.count(pattern_str.slice(allocator));
                                     },
                                     else => {
-                                        try log.addError(&source, pattern_expr.loc, "Expected a string");
+                                        try log.addError(source, pattern_expr.loc, "Expected a string");
                                         return error.InvalidPackageJSON;
                                     },
                                 }
                             }
                         },
                         else => {
-                            try log.addError(&source, nohoist_expr.loc, "Expected an array of strings");
+                            try log.addError(source, nohoist_expr.loc, "Expected an array of strings");
                             return error.InvalidPackageJSON;
                         },
                     }
@@ -1638,13 +1603,13 @@ pub const Package = extern struct {
 
                 if (workspaces_expr.get("hoistingLimits")) |hoisting_limits_expr| {
                     if (!hoisting_limits_expr.isString()) {
-                        try log.addError(&source, hoisting_limits_expr.loc, "Expected one string value of \"none\", \"workspaces\", or \"dependencies\"");
+                        try log.addError(source, hoisting_limits_expr.loc, "Expected one string value of \"none\", \"workspaces\", or \"dependencies\"");
                         return error.InvalidPackageJSON;
                     }
 
                     const hoisting_limits_str = hoisting_limits_expr.data.e_string.slice(allocator);
                     lockfile.hoisting_limits = Lockfile.HoistingLimits.fromStr(hoisting_limits_str) orelse {
-                        try log.addError(&source, hoisting_limits_expr.loc, "Expected one of \"none\", \"workspaces\", or \"dependencies\"");
+                        try log.addError(source, hoisting_limits_expr.loc, "Expected one of \"none\", \"workspaces\", or \"dependencies\"");
                         return error.InvalidPackageJSON;
                     };
                 }

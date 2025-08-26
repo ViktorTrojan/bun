@@ -386,8 +386,8 @@ const Allocator = std.mem.Allocator;
 
 const bun = @import("bun");
 const Environment = bun.Environment;
-const Glob = bun.glob;
 const JSAst = bun.ast;
+const glob = bun.glob;
 const Output = bun.Output;
 const Path = bun.path;
 const logger = bun.logger;

@@ -730,3 +730,4 @@ const patch = bun.install.patch;
 
 const PackageManager = bun.install.PackageManager;
 const Subcommand = bun.install.PackageManager.Subcommand;
+const String = bun.Semver.String;

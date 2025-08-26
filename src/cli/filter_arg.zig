@@ -275,7 +275,7 @@ pub const PackageFilterIterator = struct {
 
 const string = []const u8;
 
-const Glob = @import("../glob.zig");
+const glob = bun.glob;
 const std = @import("std");
 
 const bun = @import("bun");

@@ -67,7 +67,7 @@ pub const WorkPool = jsc.WorkPool;
 pub const Pipe = [2]bun.FileDescriptor;
 pub const SmolList = shell.SmolList;
 
-pub const GlobWalker = bun.Glob.BunGlobWalkerZ;
+pub const GlobWalker = bun.glob.BunGlobWalkerZ;
 
 pub const stdin_no = 0;
 pub const stdout_no = 1;
