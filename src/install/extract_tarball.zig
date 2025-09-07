@@ -120,13 +120,13 @@ fn extract(this: *const ExtractTarball, log: *logger.Log, tgz_bytes: []const u8)
     };
     const basename = brk: {
         var tmp = name;
-        
+
         // Strip query parameters from the name (e.g., "?token=abc" from "package.tgz?token=abc")
         // This is essential on Windows where '?' is an invalid path character
         if (strings.indexOfChar(tmp, '?')) |query_index| {
             tmp = tmp[0..query_index];
         }
-        
+
         if (tmp.len > 0 and tmp[0] == '@') {
             if (strings.indexOfChar(tmp, '/')) |i| {
                 tmp = tmp[i + 1 ..];

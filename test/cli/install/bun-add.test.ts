@@ -2328,7 +2328,7 @@ it("should add multiple dependencies specified on command line", async () => {
 it("should install tarball with query parameters", async () => {
   // Regression test for issue #20647
   // Previously on Windows, tarball URLs with query parameters would fail with BadPathName errors
-  
+
   // Use a local server to serve the tarball
   using server = Bun.serve({
     port: 0,
@@ -2338,7 +2338,7 @@ it("should install tarball with query parameters", async () => {
     },
   });
   const server_url = server.url.href.replace(/\/+$/, "");
-  
+
   await writeFile(
     join(package_dir, "package.json"),
     JSON.stringify({
@@ -2373,7 +2373,7 @@ it("should install tarball with query parameters", async () => {
       "baz-run": "index.js",
     },
   });
-  
+
   // Verify package.json has the dependency with the full URL including query params
   const pkg = await file(join(package_dir, "package.json")).json();
   expect(pkg.dependencies["baz"]).toBe(tarballUrl);
@@ -2382,7 +2382,7 @@ it("should install tarball with query parameters", async () => {
 it("should install tarballs with complex query parameters", async () => {
   // Test that query parameters with special characters work correctly
   // These characters (?, =, &, /, :) are invalid in Windows file paths but valid in URLs
-  
+
   using server = Bun.serve({
     port: 0,
     fetch(req) {
@@ -2393,7 +2393,7 @@ it("should install tarballs with complex query parameters", async () => {
     },
   });
   const server_url = server.url.href.replace(/\/+$/, "");
-  
+
   await writeFile(
     join(package_dir, "package.json"),
     JSON.stringify({
@@ -2404,7 +2404,7 @@ it("should install tarballs with complex query parameters", async () => {
 
   // Use query parameters that would be invalid Windows file path characters
   const tarballUrl = `${server_url}/pkg.tgz?auth=token:pass&path=/api/v2&time=2024-01-01T00:00:00Z`;
-  
+
   const { stdout, stderr, exited } = spawn({
     cmd: [bunExe(), "add", tarballUrl],
     cwd: package_dir,
@@ -2419,7 +2419,7 @@ it("should install tarballs with complex query parameters", async () => {
   const out = await stdout.text();
   expect(out).toContain("installed baz@");
   expect(await exited).toBe(0);
-  
+
   // Verify installation succeeded
   expect(await exists(join(package_dir, "node_modules", "baz", "index.js"))).toBeTrue();
   const installedPkg = await file(join(package_dir, "node_modules", "baz", "package.json")).json();
