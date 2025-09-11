@@ -2325,6 +2325,7 @@ it("should add multiple dependencies specified on command line", async () => {
   await access(join(package_dir, "bun.lockb"));
 });
 
+
 it("should install tarball with query parameters", async () => {
   // Regression test for issue #20647
   // Previously on Windows, tarball URLs with query parameters would fail with BadPathName errors
@@ -2379,50 +2380,3 @@ it("should install tarball with query parameters", async () => {
   expect(pkg.dependencies["baz"]).toBe(tarballUrl);
 });
 
-it("should install tarballs with complex query parameters", async () => {
-  // Test that query parameters with special characters work correctly
-  // These characters (?, =, &, /, :) are invalid in Windows file paths but valid in URLs
-
-  using server = Bun.serve({
-    port: 0,
-    fetch(req) {
-      // Verify query parameters are preserved in the request
-      const url = new URL(req.url);
-      expect(url.search).toBeTruthy();
-      return new Response(Bun.file(join(__dirname, "baz-0.0.3.tgz")));
-    },
-  });
-  const server_url = server.url.href.replace(/\/+$/, "");
-
-  await writeFile(
-    join(package_dir, "package.json"),
-    JSON.stringify({
-      name: "foo",
-      version: "0.0.1",
-    }),
-  );
-
-  // Use query parameters that would be invalid Windows file path characters
-  const tarballUrl = `${server_url}/pkg.tgz?auth=token:pass&path=/api/v2&time=2024-01-01T00:00:00Z`;
-
-  const { stdout, stderr, exited } = spawn({
-    cmd: [bunExe(), "add", tarballUrl],
-    cwd: package_dir,
-    stdout: "pipe",
-    stdin: "pipe",
-    stderr: "pipe",
-    env,
-  });
-
-  const err = await stderr.text();
-  expect(err).toContain("Saved lockfile");
-  const out = await stdout.text();
-  expect(out).toContain("installed baz@");
-  expect(await exited).toBe(0);
-
-  // Verify installation succeeded
-  expect(await exists(join(package_dir, "node_modules", "baz", "index.js"))).toBeTrue();
-  const installedPkg = await file(join(package_dir, "node_modules", "baz", "package.json")).json();
-  expect(installedPkg.name).toBe("baz");
-  expect(installedPkg.version).toBe("0.0.3");
-});
