@@ -121,7 +121,6 @@ fn extract(this: *const ExtractTarball, log: *logger.Log, tgz_bytes: []const u8)
     const basename = brk: {
         var tmp = name;
 
-
         if (strings.indexOfChar(tmp, '?')) |query_index| {
             tmp = tmp[0..query_index];
         }
@@ -138,7 +137,7 @@ fn extract(this: *const ExtractTarball, log: *logger.Log, tgz_bytes: []const u8)
         } else if (tmp.len > 0 and tmp[0] == '@') {
             if (strings.indexOfChar(tmp, '/')) |i| {
                 if (tmp.len > i + 1) {
-                  tmp = tmp[i + 1 ..];
+                    tmp = tmp[i + 1 ..];
                 }
             }
         }
@@ -147,8 +146,8 @@ fn extract(this: *const ExtractTarball, log: *logger.Log, tgz_bytes: []const u8)
             // On Windows, colons are invalid in paths (except for drive letters)
             // URLs like "https://example.com/package.tgz" would have a colon
             if (strings.lastIndexOfChar(tmp, ':')) |i| {
-              if (i > "C:".len)
-                tmp = tmp[i + 1 ..];
+                if (i > "C:".len)
+                    tmp = tmp[i + 1 ..];
             }
         }
 

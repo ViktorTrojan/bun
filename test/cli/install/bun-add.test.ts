@@ -1,6 +1,6 @@
 import { file, spawn } from "bun";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, setDefaultTimeout } from "bun:test";
-import { access, appendFile, copyFile, exists, mkdir, readlink, rm, writeFile } from "fs/promises";
+import { access, appendFile, copyFile, mkdir, readlink, rm, writeFile } from "fs/promises";
 import { bunExe, bunEnv as env, readdirSorted, tmpdirSync, toBeValidBin, toBeWorkspaceLink, toHaveBins } from "harness";
 import { join, relative, resolve } from "path";
 import {
@@ -2325,7 +2325,6 @@ it("should add multiple dependencies specified on command line", async () => {
   await access(join(package_dir, "bun.lockb"));
 });
 
-
 it("should install tarball with query parameters", async () => {
   // Regression test for issue #20647
   // Previously on Windows, tarball URLs with query parameters would fail with BadPathName errors
@@ -2379,4 +2378,3 @@ it("should install tarball with query parameters", async () => {
   const pkg = await file(join(package_dir, "package.json")).json();
   expect(pkg.dependencies["baz"]).toBe(tarballUrl);
 });
-
