@@ -1,144 +1,220 @@
-import { spawnSync } from "bun";
 import { describe, expect, test } from "bun:test";
-import { bunEnv, bunExe, tempDir } from "../../harness";
+import { bunEnv, bunExe, tempDirWithFiles } from "../../harness";
 
 describe("CI detection", () => {
-  test("CI=false disables CI detection", () => {
-    using dir = tempDir("ci-test", {
-      "test.js": `console.log("CI:", process.env.CI);`,
+  test("CI=false disables CI detection even with GITHUB_ACTIONS=true", async () => {
+    const dir = tempDirWithFiles("ci-false-test", {
+      "test.test.js": `
+import { test, expect } from "bun:test";
+
+test.only("should run when CI=false", () => {
+  expect(1 + 1).toBe(2);
+});
+      `,
     });
 
-    const result = spawnSync({
-      cmd: [bunExe(), "test.js"],
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "test", "test.test.js"],
       env: {
         ...bunEnv,
         CI: "false",
-        GITHUB_ACTIONS: "true", // This should be ignored when CI=false
+        GITHUB_ACTIONS: "true", // Should be ignored when CI=false
       },
-      cwd: String(dir),
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout.toString()).toContain("CI: false");
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    // test.only should work (not throw) when CI=false
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain("1 pass");
   });
 
-  test("CI=true without specific CI env vars returns unknown", () => {
-    using dir = tempDir("ci-test", {
-      "test.js": `console.log("done");`,
+  test("CI=true without specific CI env vars detects as CI (blocks test.only)", async () => {
+    const dir = tempDirWithFiles("ci-true-unknown", {
+      "test.test.js": `
+import { test, expect } from "bun:test";
+
+test.only("should fail in CI", () => {
+  expect(1 + 1).toBe(2);
+});
+      `,
     });
 
     // Clean environment - remove any CI-specific vars
     const cleanEnv = { ...bunEnv };
-    // Remove common CI env vars to ensure we get "unknown"
     delete cleanEnv.GITHUB_ACTIONS;
     delete cleanEnv.GITLAB_CI;
     delete cleanEnv.CIRCLECI;
     delete cleanEnv.TRAVIS;
     delete cleanEnv.BUILDKITE;
     delete cleanEnv.JENKINS_URL;
+    delete cleanEnv.BUILD_ID;
 
-    const result = spawnSync({
-      cmd: [bunExe(), "test.js"],
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "test", "test.test.js"],
       env: {
         ...cleanEnv,
         CI: "true",
       },
-      cwd: String(dir),
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    expect(result.exitCode).toBe(0);
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    // test.only should fail (throw) when CI=true
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain(".only is disabled in CI environments");
   });
 
-  test("Specific CI env vars take precedence over CI=true", () => {
-    using dir = tempDir("ci-test", {
-      "test.js": `console.log("done");`,
+  test("Specific CI env vars take precedence over CI=true (GITHUB_ACTIONS)", async () => {
+    const dir = tempDirWithFiles("ci-github-precedence", {
+      "test.test.js": `
+import { test, expect } from "bun:test";
+
+test.only("should fail in CI", () => {
+  expect(1 + 1).toBe(2);
+});
+      `,
     });
 
-    const result = spawnSync({
-      cmd: [bunExe(), "test.js"],
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "test", "test.test.js"],
       env: {
         ...bunEnv,
         CI: "true",
         GITHUB_ACTIONS: "true",
       },
-      cwd: String(dir),
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    expect(result.exitCode).toBe(0);
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    // test.only should fail because github-actions CI is detected
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain(".only is disabled in CI environments");
   });
 
-  test("GITHUB_ACTIONS detection", () => {
-    using dir = tempDir("ci-test", {
-      "test.js": `console.log("done");`,
+  test("GITHUB_ACTIONS detection (blocks test.only)", async () => {
+    const dir = tempDirWithFiles("ci-github-test", {
+      "test.test.js": `
+import { test, expect } from "bun:test";
+
+test.only("should fail in CI", () => {
+  expect(1 + 1).toBe(2);
+});
+      `,
     });
 
-    const result = spawnSync({
-      cmd: [bunExe(), "test.js"],
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "test", "test.test.js"],
       env: {
         ...bunEnv,
         GITHUB_ACTIONS: "true",
       },
-      cwd: String(dir),
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    expect(result.exitCode).toBe(0);
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain(".only is disabled in CI environments");
   });
 
-  test("GITLAB_CI detection", () => {
-    using dir = tempDir("ci-test", {
-      "test.js": `console.log("done");`,
+  test("GITLAB_CI detection (blocks test.only)", async () => {
+    const dir = tempDirWithFiles("ci-gitlab-test", {
+      "test.test.js": `
+import { test, expect } from "bun:test";
+
+test.only("should fail in CI", () => {
+  expect(1 + 1).toBe(2);
+});
+      `,
     });
 
-    const result = spawnSync({
-      cmd: [bunExe(), "test.js"],
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "test", "test.test.js"],
       env: {
         ...bunEnv,
         GITLAB_CI: "true",
       },
-      cwd: String(dir),
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    expect(result.exitCode).toBe(0);
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain(".only is disabled in CI environments");
   });
 
-  test("CIRCLECI detection", () => {
-    using dir = tempDir("ci-test", {
-      "test.js": `console.log("done");`,
+  test("CIRCLECI detection (blocks test.only)", async () => {
+    const dir = tempDirWithFiles("ci-circle-test", {
+      "test.test.js": `
+import { test, expect } from "bun:test";
+
+test.only("should fail in CI", () => {
+  expect(1 + 1).toBe(2);
+});
+      `,
     });
 
-    const result = spawnSync({
-      cmd: [bunExe(), "test.js"],
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "test", "test.test.js"],
       env: {
         ...bunEnv,
         CIRCLECI: "true",
       },
-      cwd: String(dir),
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    expect(result.exitCode).toBe(0);
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain(".only is disabled in CI environments");
   });
 
-  test("No CI detection when CI env vars are absent", () => {
-    using dir = tempDir("ci-test", {
-      "test.js": `console.log("done");`,
+  test("No CI detection with CI=false (allows test.only)", async () => {
+    const dir = tempDirWithFiles("ci-none-test", {
+      "test.test.js": `
+import { test, expect } from "bun:test";
+
+test.only("should run when not in CI", () => {
+  expect(1 + 1).toBe(2);
+});
+
+test("should be skipped", () => {
+  expect(false).toBe(true);
+});
+      `,
     });
 
-    // Clean environment - remove any CI-specific vars
-    const cleanEnv = { ...bunEnv };
-    delete cleanEnv.CI;
-    delete cleanEnv.GITHUB_ACTIONS;
-    delete cleanEnv.GITLAB_CI;
-    delete cleanEnv.CIRCLECI;
-    delete cleanEnv.TRAVIS;
-    delete cleanEnv.BUILDKITE;
-    delete cleanEnv.JENKINS_URL;
-
-    const result = spawnSync({
-      cmd: [bunExe(), "test.js"],
-      env: cleanEnv,
-      cwd: String(dir),
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "test", "test.test.js"],
+      env: {
+        ...bunEnv,
+        CI: "false", // Explicitly disable CI detection
+      },
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    expect(result.exitCode).toBe(0);
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    // test.only should work (not throw) when CI=false
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain("1 pass");
   });
 });
