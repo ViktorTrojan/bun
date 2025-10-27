@@ -1343,6 +1343,27 @@ pub const FetchTasklet = struct {
 
         log("callback success={} ignore_data={} has_more={} bytes={}", .{ result.isSuccess(), task.ignore_data, result.has_more, result.body.?.list.items.len });
 
+        if (Output.trace_enabled) {
+            const trace = Output.tracer("fetch");
+            if (result.metadata) |metadata| {
+                const url = async_http.url.href;
+                trace.trace(.{
+                    .call = "response",
+                    .url = url,
+                    .status = metadata.response.status,
+                    .has_more = result.has_more,
+                    .body_size = if (result.body) |body| body.list.items.len else 0,
+                });
+            } else if (result.fail) |fail| {
+                const url = async_http.url.href;
+                trace.trace(.{
+                    .call = "response",
+                    .url = url,
+                    .err = @errorName(fail),
+                });
+            }
+        }
+
         const prev_metadata = task.result.metadata;
         const prev_cert_info = task.result.certificate_info;
         task.result = result;
