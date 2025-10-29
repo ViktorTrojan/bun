@@ -548,7 +548,7 @@ const bun = @import("bun");
 const OOM = bun.OOM;
 const Output = bun.Output;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;
 
 const install = bun.install;

@@ -256,5 +256,5 @@ const bun = @import("bun");
 const Environment = bun.Environment;
 const assert = bun.assert;
 
-const Query = bun.Semver.Query;
-const Version = bun.Semver.Version;
+const Query = bun.semver.Query;
+const Version = bun.semver.Version;

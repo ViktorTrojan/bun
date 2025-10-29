@@ -2214,7 +2214,7 @@ const strings = bun.strings;
 const Expr = bun.ast.Expr;
 const FileSystem = bun.fs.FileSystem;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const ExternalString = Semver.ExternalString;
 const String = Semver.String;
 

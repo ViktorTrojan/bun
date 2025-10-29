@@ -9,7 +9,7 @@ const CompileTarget = @This();
 os: Environment.OperatingSystem = Environment.os,
 arch: Environment.Architecture = Environment.arch,
 baseline: bool = !Environment.enableSIMD,
-version: bun.Semver.Version = .{
+version: bun.semver.Version = .{
     .major = @truncate(Environment.version.major),
     .minor = @truncate(Environment.version.minor),
     .patch = @truncate(Environment.version.patch),
@@ -347,7 +347,7 @@ pub fn tryFrom(input_: []const u8) ParseError!CompileTarget {
             found_baseline = true;
             continue;
         } else if (strings.hasPrefixComptime(token, "v1.") or strings.hasPrefixComptime(token, "v0.")) {
-            const version = bun.Semver.Version.parse(bun.Semver.SlicedString.init(token[1..], token[1..]));
+            const version = bun.semver.Version.parse(bun.semver.SlicedString.init(token[1..], token[1..]));
             if (version.valid) {
                 if (version.version.major == null or version.version.minor == null or version.version.patch == null) {
                     return error.InvalidTarget;

@@ -989,7 +989,7 @@ const Output = bun.Output;
 const assert = bun.assert;
 const strings = bun.strings;
 
-const ExternalString = bun.Semver.ExternalString;
-const Query = bun.Semver.Query;
-const SlicedString = bun.Semver.SlicedString;
-const String = bun.Semver.String;
+const ExternalString = bun.semver.ExternalString;
+const Query = bun.semver.Query;
+const SlicedString = bun.semver.SlicedString;
+const String = bun.semver.String;

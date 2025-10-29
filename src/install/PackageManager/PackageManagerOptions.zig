@@ -84,9 +84,298 @@ minimum_release_age_ms: ?f64 = null,
 minimum_release_age_excludes: ?[]const []const u8 = null,
 
 /// Override CPU architecture for optional dependencies filtering
-cpu: Npm.Architecture = Npm.Architecture.current,
+cpu: Npm.Architecture = .current,
 /// Override OS for optional dependencies filtering
-os: Npm.OperatingSystem = Npm.OperatingSystem.current,
+os: Npm.OperatingSystem = .current,
+
+// from bunfig.toml
+config_version: ?ConfigVersion = null,
+
+pub const ConfigVersion = enum(u64) {
+    v0,
+    v1,
+
+    pub const current: ConfigVersion = .v1;
+
+    pub fn forLockfile(this: ?ConfigVersion) u64 {
+        return @intFromEnum(this orelse current);
+    }
+
+    pub fn fromExpr(expr: bun.ast.Expr) OOM!?ConfigVersion {
+        switch (expr.data) {
+            .e_string => {
+                const config_version_str = expr.data.e_string.slice(bun.default_allocator);
+
+                if (bun_config_versions.get(config_version_str)) |config_version| {
+                    return config_version;
+                }
+
+                // const config_version_sliced = semver.SlicedString.init(config_version_str, config_version_str);
+                // const config_version_range = try semver.Query.parse(bun.default_allocator, config_version_str, config_version_sliced);
+
+                // for (bun_versions) |version_info| {
+                //     const version, const config_version = version_info;
+                //     const v = semver.Version.parseUTF8(version).version.min();
+                //     if (config_version_range.satisfies(v, version, config_version_str)) {
+                //         return config_version;
+                //     }
+                // }
+
+                // if nothing matches default to current
+                return .current;
+            },
+            .e_number => {
+                const config_version = expr.data.e_number.value;
+                return fromNum(config_version);
+            },
+            else => {},
+        }
+        return null;
+    }
+
+    pub fn fromNum(config_version: anytype) ?ConfigVersion {
+        if (config_version == 0) {
+            return .v0;
+        } else if (config_version == 1) {
+            return .v1;
+        }
+
+        if (config_version > @intFromEnum(current)) {
+            return current;
+        }
+
+        return null;
+    }
+};
+
+const bun_config_versions = bun.ComptimeStringMap(ConfigVersion, .{
+    .{ "1.3.2", ConfigVersion.v1 },
+    .{ "1.3.1", ConfigVersion.v1 },
+    .{ "1.3.0", ConfigVersion.v1 },
+    .{ "1.2.23", ConfigVersion.v0 },
+    .{ "1.2.22", ConfigVersion.v0 },
+    .{ "1.2.21", ConfigVersion.v0 },
+    .{ "1.2.20", ConfigVersion.v0 },
+    .{ "1.2.19", ConfigVersion.v0 },
+    .{ "1.2.18", ConfigVersion.v0 },
+    .{ "1.2.17", ConfigVersion.v0 },
+    .{ "1.2.16", ConfigVersion.v0 },
+    .{ "1.2.15", ConfigVersion.v0 },
+    .{ "1.2.14", ConfigVersion.v0 },
+    .{ "1.2.13", ConfigVersion.v0 },
+    .{ "1.2.12", ConfigVersion.v0 },
+    .{ "1.2.11", ConfigVersion.v0 },
+    .{ "1.2.10", ConfigVersion.v0 },
+    .{ "1.2.9", ConfigVersion.v0 },
+    .{ "1.2.8", ConfigVersion.v0 },
+    .{ "1.2.7", ConfigVersion.v0 },
+    .{ "1.2.6", ConfigVersion.v0 },
+    .{ "1.2.5", ConfigVersion.v0 },
+    .{ "1.2.4", ConfigVersion.v0 },
+    .{ "1.2.3", ConfigVersion.v0 },
+    .{ "1.2.2", ConfigVersion.v0 },
+    .{ "1.2.1", ConfigVersion.v0 },
+    .{ "1.2.0", ConfigVersion.v0 },
+    .{ "1.1.45", ConfigVersion.v0 },
+    .{ "1.1.44", ConfigVersion.v0 },
+    .{ "1.1.43", ConfigVersion.v0 },
+    .{ "1.1.42", ConfigVersion.v0 },
+    .{ "1.1.41", ConfigVersion.v0 },
+    .{ "1.1.40", ConfigVersion.v0 },
+    .{ "1.1.39", ConfigVersion.v0 },
+    .{ "1.1.38", ConfigVersion.v0 },
+    .{ "1.1.37", ConfigVersion.v0 },
+    .{ "1.1.36", ConfigVersion.v0 },
+    .{ "1.1.35", ConfigVersion.v0 },
+    .{ "1.1.34", ConfigVersion.v0 },
+    .{ "1.1.33", ConfigVersion.v0 },
+    .{ "1.1.32", ConfigVersion.v0 },
+    .{ "1.1.31", ConfigVersion.v0 },
+    .{ "1.1.30", ConfigVersion.v0 },
+    .{ "1.1.29", ConfigVersion.v0 },
+    .{ "1.1.28", ConfigVersion.v0 },
+    .{ "1.1.27", ConfigVersion.v0 },
+    .{ "1.1.26", ConfigVersion.v0 },
+    .{ "1.1.25", ConfigVersion.v0 },
+    .{ "1.1.24", ConfigVersion.v0 },
+    .{ "1.1.23", ConfigVersion.v0 },
+    .{ "1.1.22", ConfigVersion.v0 },
+    .{ "1.1.21", ConfigVersion.v0 },
+    .{ "1.1.20", ConfigVersion.v0 },
+    .{ "1.1.19", ConfigVersion.v0 },
+    .{ "1.1.18", ConfigVersion.v0 },
+    .{ "1.1.17", ConfigVersion.v0 },
+    .{ "1.1.16", ConfigVersion.v0 },
+    .{ "1.1.15", ConfigVersion.v0 },
+    .{ "1.1.14", ConfigVersion.v0 },
+    .{ "1.1.13", ConfigVersion.v0 },
+    .{ "1.1.12", ConfigVersion.v0 },
+    .{ "1.1.11", ConfigVersion.v0 },
+    .{ "1.1.10", ConfigVersion.v0 },
+    .{ "1.1.9", ConfigVersion.v0 },
+    .{ "1.1.8", ConfigVersion.v0 },
+    .{ "1.1.7", ConfigVersion.v0 },
+    .{ "1.1.6", ConfigVersion.v0 },
+    .{ "1.1.5", ConfigVersion.v0 },
+    .{ "1.1.4", ConfigVersion.v0 },
+    .{ "1.1.3", ConfigVersion.v0 },
+    .{ "1.1.2", ConfigVersion.v0 },
+    .{ "1.1.1", ConfigVersion.v0 },
+    .{ "1.1.0", ConfigVersion.v0 },
+    .{ "1.0.36", ConfigVersion.v0 },
+    .{ "1.0.35", ConfigVersion.v0 },
+    .{ "1.0.34", ConfigVersion.v0 },
+    .{ "1.0.33", ConfigVersion.v0 },
+    .{ "1.0.32", ConfigVersion.v0 },
+    .{ "1.0.31", ConfigVersion.v0 },
+    .{ "1.0.30", ConfigVersion.v0 },
+    .{ "1.0.29", ConfigVersion.v0 },
+    .{ "1.0.28", ConfigVersion.v0 },
+    .{ "1.0.27", ConfigVersion.v0 },
+    .{ "1.0.26", ConfigVersion.v0 },
+    .{ "1.0.25", ConfigVersion.v0 },
+    .{ "1.0.24", ConfigVersion.v0 },
+    .{ "1.0.23", ConfigVersion.v0 },
+    .{ "1.0.22", ConfigVersion.v0 },
+    .{ "1.0.21", ConfigVersion.v0 },
+    .{ "1.0.20", ConfigVersion.v0 },
+    .{ "1.0.19", ConfigVersion.v0 },
+    .{ "1.0.18", ConfigVersion.v0 },
+    .{ "1.0.17", ConfigVersion.v0 },
+    .{ "1.0.16", ConfigVersion.v0 },
+    .{ "1.0.15", ConfigVersion.v0 },
+    .{ "1.0.14", ConfigVersion.v0 },
+    .{ "1.0.13", ConfigVersion.v0 },
+    .{ "1.0.12", ConfigVersion.v0 },
+    .{ "1.0.11", ConfigVersion.v0 },
+    .{ "1.0.10", ConfigVersion.v0 },
+    .{ "1.0.9", ConfigVersion.v0 },
+    .{ "1.0.8", ConfigVersion.v0 },
+    .{ "1.0.7", ConfigVersion.v0 },
+    .{ "1.0.6", ConfigVersion.v0 },
+    .{ "1.0.5", ConfigVersion.v0 },
+    .{ "1.0.4", ConfigVersion.v0 },
+    .{ "1.0.3", ConfigVersion.v0 },
+    .{ "1.0.2", ConfigVersion.v0 },
+    .{ "1.0.1", ConfigVersion.v0 },
+    .{ "1.0.0", ConfigVersion.v0 },
+    .{ "0.8.1", ConfigVersion.v0 },
+    .{ "0.8.0", ConfigVersion.v0 },
+    .{ "0.7.3", ConfigVersion.v0 },
+    .{ "0.7.2", ConfigVersion.v0 },
+    .{ "0.7.1", ConfigVersion.v0 },
+    .{ "0.7.0", ConfigVersion.v0 },
+    .{ "0.6.14", ConfigVersion.v0 },
+    .{ "0.6.13", ConfigVersion.v0 },
+    .{ "0.6.12", ConfigVersion.v0 },
+    .{ "0.6.11", ConfigVersion.v0 },
+    .{ "0.6.10", ConfigVersion.v0 },
+    .{ "0.6.9", ConfigVersion.v0 },
+    .{ "0.6.8", ConfigVersion.v0 },
+    .{ "0.6.7", ConfigVersion.v0 },
+    .{ "0.6.6", ConfigVersion.v0 },
+    .{ "0.6.5", ConfigVersion.v0 },
+    .{ "0.6.4", ConfigVersion.v0 },
+    .{ "0.6.3", ConfigVersion.v0 },
+    .{ "0.6.2", ConfigVersion.v0 },
+    .{ "0.6.1", ConfigVersion.v0 },
+    .{ "0.6.0", ConfigVersion.v0 },
+    .{ "0.5.9", ConfigVersion.v0 },
+    .{ "0.5.8", ConfigVersion.v0 },
+    .{ "0.5.7", ConfigVersion.v0 },
+    .{ "0.5.6", ConfigVersion.v0 },
+    .{ "0.5.5", ConfigVersion.v0 },
+    .{ "0.5.4", ConfigVersion.v0 },
+    .{ "0.5.3", ConfigVersion.v0 },
+    .{ "0.5.2", ConfigVersion.v0 },
+    .{ "0.5.1", ConfigVersion.v0 },
+    .{ "0.5.0", ConfigVersion.v0 },
+    .{ "0.4.0", ConfigVersion.v0 },
+    .{ "0.3.0", ConfigVersion.v0 },
+    .{ "0.2.2", ConfigVersion.v0 },
+    .{ "0.2.1", ConfigVersion.v0 },
+    .{ "0.2.0", ConfigVersion.v0 },
+    .{ "0.1.13", ConfigVersion.v0 },
+    .{ "0.1.12", ConfigVersion.v0 },
+    .{ "0.1.11", ConfigVersion.v0 },
+    .{ "0.1.10", ConfigVersion.v0 },
+    .{ "0.1.9", ConfigVersion.v0 },
+    .{ "0.1.8", ConfigVersion.v0 },
+    .{ "0.1.7", ConfigVersion.v0 },
+    .{ "0.1.6", ConfigVersion.v0 },
+    .{ "0.1.5", ConfigVersion.v0 },
+    .{ "0.1.4", ConfigVersion.v0 },
+    .{ "0.1.3", ConfigVersion.v0 },
+    .{ "0.1.2", ConfigVersion.v0 },
+    .{ "0.1.1", ConfigVersion.v0 },
+    .{ "0.1.0", ConfigVersion.v0 },
+    .{ "0.0.83", ConfigVersion.v0 },
+    .{ "0.0.82", ConfigVersion.v0 },
+    .{ "0.0.81", ConfigVersion.v0 },
+    .{ "0.0.80", ConfigVersion.v0 },
+    .{ "0.0.79", ConfigVersion.v0 },
+    .{ "0.0.78", ConfigVersion.v0 },
+    .{ "0.0.77", ConfigVersion.v0 },
+    .{ "0.0.76", ConfigVersion.v0 },
+    .{ "0.0.75", ConfigVersion.v0 },
+    .{ "0.0.74", ConfigVersion.v0 },
+    .{ "0.0.73", ConfigVersion.v0 },
+    .{ "0.0.72", ConfigVersion.v0 },
+    .{ "0.0.71", ConfigVersion.v0 },
+    .{ "0.0.70", ConfigVersion.v0 },
+    .{ "0.0.69", ConfigVersion.v0 },
+    .{ "0.0.68", ConfigVersion.v0 },
+    .{ "0.0.66", ConfigVersion.v0 },
+    .{ "0.0.65", ConfigVersion.v0 },
+    .{ "0.0.64", ConfigVersion.v0 },
+    .{ "0.0.63", ConfigVersion.v0 },
+    .{ "0.0.62", ConfigVersion.v0 },
+    .{ "0.0.61", ConfigVersion.v0 },
+    .{ "0.0.60", ConfigVersion.v0 },
+    .{ "0.0.59", ConfigVersion.v0 },
+    .{ "0.0.58", ConfigVersion.v0 },
+    .{ "0.0.57", ConfigVersion.v0 },
+    .{ "0.0.56", ConfigVersion.v0 },
+    .{ "0.0.55", ConfigVersion.v0 },
+    .{ "0.0.54", ConfigVersion.v0 },
+    .{ "0.0.53", ConfigVersion.v0 },
+    .{ "0.0.52", ConfigVersion.v0 },
+    .{ "0.0.51", ConfigVersion.v0 },
+    .{ "0.0.50", ConfigVersion.v0 },
+    .{ "0.0.49", ConfigVersion.v0 },
+    .{ "0.0.48", ConfigVersion.v0 },
+    .{ "0.0.46", ConfigVersion.v0 },
+    .{ "0.0.45", ConfigVersion.v0 },
+    .{ "0.0.44", ConfigVersion.v0 },
+    .{ "0.0.43", ConfigVersion.v0 },
+    .{ "0.0.42", ConfigVersion.v0 },
+    .{ "0.0.41", ConfigVersion.v0 },
+    .{ "0.0.40", ConfigVersion.v0 },
+    .{ "0.0.39", ConfigVersion.v0 },
+    .{ "0.0.38", ConfigVersion.v0 },
+    .{ "0.0.37", ConfigVersion.v0 },
+    .{ "0.0.36", ConfigVersion.v0 },
+    .{ "0.0.35", ConfigVersion.v0 },
+    .{ "0.0.34", ConfigVersion.v0 },
+    .{ "0.0.32", ConfigVersion.v0 },
+    .{ "0.0.31", ConfigVersion.v0 },
+    .{ "0.0.30", ConfigVersion.v0 },
+    .{ "0.0.29", ConfigVersion.v0 },
+    .{ "0.0.28", ConfigVersion.v0 },
+    .{ "0.0.27", ConfigVersion.v0 },
+    .{ "0.0.26", ConfigVersion.v0 },
+    .{ "0.0.25", ConfigVersion.v0 },
+    .{ "0.0.24", ConfigVersion.v0 },
+    .{ "0.0.23", ConfigVersion.v0 },
+    .{ "0.0.22", ConfigVersion.v0 },
+    .{ "0.0.21", ConfigVersion.v0 },
+    .{ "0.0.20", ConfigVersion.v0 },
+    .{ "0.0.19", ConfigVersion.v0 },
+    .{ "0.0.18", ConfigVersion.v0 },
+    .{ "0.0.17", ConfigVersion.v0 },
+    .{ "0.0.16", ConfigVersion.v0 },
+    .{ "0.0.15", ConfigVersion.v0 },
+});
 
 pub const PublishConfig = struct {
     access: ?Access = null,
@@ -262,6 +551,10 @@ pub fn load(
         this.did_override_default_scope = this.scope.url_hash != Npm.Registry.default_url_hash;
     }
     if (bun_install_) |config| {
+        if (config.config_version) |config_version| {
+            this.config_version = config_version;
+        }
+
         if (config.cache_directory) |cache_directory| {
             this.cache_directory = cache_directory;
         }
@@ -761,3 +1054,4 @@ const patch = bun.install.patch;
 
 const PackageManager = bun.install.PackageManager;
 const Subcommand = bun.install.PackageManager.Subcommand;
+const semver = bun.semver;

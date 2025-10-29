@@ -407,7 +407,7 @@ const std = @import("std");
 
 const bun = @import("bun");
 const PathBuffer = bun.PathBuffer;
-const ExternalString = bun.Semver.ExternalString;
+const ExternalString = bun.semver.ExternalString;
 
 const install = bun.install;
 const DependencyID = install.DependencyID;

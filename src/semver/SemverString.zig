@@ -661,5 +661,5 @@ const jsc = bun.jsc;
 const strings = bun.strings;
 const Lockfile = bun.install.Lockfile;
 
-const ExternalString = bun.Semver.ExternalString;
-const SlicedString = bun.Semver.SlicedString;
+const ExternalString = bun.semver.ExternalString;
+const SlicedString = bun.semver.SlicedString;

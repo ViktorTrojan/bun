@@ -285,5 +285,5 @@ const bun = @import("bun");
 const JSAst = bun.ast;
 const default_allocator = bun.default_allocator;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;

@@ -746,7 +746,7 @@ const Command = bun.cli.Command;
 const File = bun.sys.File;
 const PackageNameHash = bun.install.PackageNameHash;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;
 
 const Fs = bun.fs;

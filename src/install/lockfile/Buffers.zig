@@ -180,7 +180,7 @@ pub fn writeArray(comptime StreamType: type, stream: StreamType, comptime Writer
 
 pub fn save(
     lockfile: *Lockfile,
-    verbose_log: bool,
+    options: *const PackageManager.Options,
     allocator: Allocator,
     comptime StreamType: type,
     stream: StreamType,
@@ -189,7 +189,7 @@ pub fn save(
 ) !void {
     const buffers = lockfile.buffers;
     inline for (sizes.names) |name| {
-        if (verbose_log) {
+        if (options.log_level.isVerbose()) {
             Output.prettyErrorln("Saving {d} {s}", .{ @field(buffers, name).items.len, name });
         }
 
@@ -385,7 +385,7 @@ const assert = bun.assert;
 const logger = bun.logger;
 const strings = bun.strings;
 const Bitset = bun.bit_set.DynamicBitSetUnmanaged;
-const String = bun.Semver.String;
+const String = bun.semver.String;
 
 const install = bun.install;
 const Aligner = install.Aligner;

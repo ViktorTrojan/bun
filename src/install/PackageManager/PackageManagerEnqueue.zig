@@ -235,7 +235,7 @@ pub fn enqueuePackageForDownload(
     name: []const u8,
     dependency_id: DependencyID,
     package_id: PackageID,
-    version: bun.Semver.Version,
+    version: bun.semver.Version,
     url: []const u8,
     task_context: TaskCallbackContext,
     patch_name_and_version_hash: ?u64,
@@ -1874,7 +1874,7 @@ const ThreadPool = bun.ThreadPool;
 const logger = bun.logger;
 const strings = bun.strings;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;
 
 const Fs = bun.fs;

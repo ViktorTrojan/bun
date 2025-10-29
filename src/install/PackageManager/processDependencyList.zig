@@ -327,7 +327,7 @@ const Path = bun.path;
 const Syscall = bun.sys;
 const logger = bun.logger;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const ExternalString = Semver.ExternalString;
 const String = Semver.String;
 

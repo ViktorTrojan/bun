@@ -788,6 +788,6 @@ const assert = bun.assert;
 const default_allocator = bun.default_allocator;
 const strings = bun.strings;
 
-const Range = bun.Semver.Range;
-const SlicedString = bun.Semver.SlicedString;
-const Version = bun.Semver.Version;
+const Range = bun.semver.Range;
+const SlicedString = bun.semver.SlicedString;
+const Version = bun.semver.Version;

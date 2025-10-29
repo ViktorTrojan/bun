@@ -3050,7 +3050,7 @@ pub const api = struct {
 
         link_workspace_packages: ?bool = null,
 
-        node_linker: ?bun.install.PackageManager.Options.NodeLinker = null,
+        node_linker: ?install.PackageManager.Options.NodeLinker = null,
 
         security_scanner: ?[]const u8 = null,
 
@@ -3059,6 +3059,8 @@ pub const api = struct {
 
         public_hoist_pattern: ?install.PnpmMatcher = null,
         hoist_pattern: ?install.PnpmMatcher = null,
+
+        config_version: ?install.PackageManager.Options.ConfigVersion = null,
     };
 
     pub const ClientServerModule = struct {

@@ -2052,7 +2052,7 @@ const Output = bun.Output;
 const assert = bun.assert;
 const default_allocator = bun.default_allocator;
 const strings = bun.strings;
-const SemverObject = bun.Semver.SemverObject;
+const SemverObject = bun.semver.SemverObject;
 const gen = bun.gen.BunObject;
 
 const api = bun.api;

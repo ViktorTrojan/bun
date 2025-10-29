@@ -654,6 +654,38 @@ pub fn installWithManager(
         }
     }
 
+    const config_version_changed, const config_version: Options.ConfigVersion = config: {
+        const lockfile_config_version = manager.lockfile.config_version orelse {
+            if (manager.options.config_version) |bunfig_config_version| {
+                break :config .{ true, bunfig_config_version };
+            }
+
+            // configVersion doesn't exist in bunfig.toml or the lockfile
+
+            if (load_result == .not_found) {
+                // lockfile doesn't exist, assume new project
+                break :config .{ true, .current };
+            }
+
+            // lockfile exists without config version, choose earliest version
+            break :config .{ true, .v0 };
+        };
+
+        const bunfig_config_version = manager.options.config_version orelse {
+            // lockfile config version exists, bunfig doesn't exist or exists and doesn't have one:
+            // keep lockfile config version
+            break :config .{ false, lockfile_config_version };
+        };
+
+        break :config .{
+            lockfile_config_version != bunfig_config_version,
+            // always use bunfig over lockfile
+            bunfig_config_version,
+        };
+    };
+
+    manager.options.enable.force_save_lockfile = manager.options.enable.force_save_lockfile or config_version_changed;
+
     // append scripts to lockfile before generating new metahash
     manager.loadRootLifecycleScripts(root);
     defer {
@@ -782,29 +814,13 @@ pub fn installWithManager(
             break :install_summary .{};
         }
 
-        switch (manager.options.node_linker) {
+        linker: switch (manager.options.node_linker) {
             .auto => {
-                if (manager.lockfile.workspace_paths.count() > 0 and
-                    !load_result.migratedFromNpm())
-                {
-                    break :install_summary bun.handleOom(installIsolatedPackages(
-                        manager,
-                        ctx,
-                        install_root_dependencies,
-                        workspace_filters,
-                        null,
-                    ));
-                }
-                break :install_summary try installHoistedPackages(
-                    manager,
-                    ctx,
-                    workspace_filters,
-                    install_root_dependencies,
-                    log_level,
-                    null,
-                );
+                continue :linker switch (config_version) {
+                    .v0 => .hoisted,
+                    .v1 => if (manager.lockfile.workspace_paths.count() > 0 and !load_result.migratedFromNpm()) .isolated else .hoisted,
+                };
             },
-
             .hoisted,
             => break :install_summary try installHoistedPackages(
                 manager,
@@ -1122,7 +1138,7 @@ const default_allocator = bun.default_allocator;
 const strings = bun.strings;
 const Command = bun.cli.Command;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;
 
 const Fs = bun.fs;

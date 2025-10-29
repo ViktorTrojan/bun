@@ -2001,7 +2001,7 @@ const strings = bun.strings;
 const Command = bun.cli.Command;
 const FileSystem = bun.fs.FileSystem;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const SlicedString = Semver.SlicedString;
 const String = Semver.String;
 

@@ -2788,7 +2788,7 @@ const strings = bun.strings;
 const File = bun.sys.File;
 const api = bun.schema.api;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const ExternalString = Semver.ExternalString;
 const SlicedString = Semver.SlicedString;
 const String = Semver.String;

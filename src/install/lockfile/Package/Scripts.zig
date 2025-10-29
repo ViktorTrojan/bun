@@ -372,7 +372,7 @@ const logger = bun.logger;
 const strings = bun.strings;
 const Expr = bun.ast.Expr;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;
 
 const install = bun.install;

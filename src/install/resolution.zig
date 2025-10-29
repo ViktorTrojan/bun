@@ -548,5 +548,5 @@ const OOM = bun.OOM;
 const strings = bun.strings;
 const Dependency = bun.install.Dependency;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;

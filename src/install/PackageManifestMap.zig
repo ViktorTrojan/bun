@@ -120,5 +120,5 @@ const PackageNameHash = install.PackageNameHash;
 const bun = @import("bun");
 const IdentityContext = bun.IdentityContext;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;

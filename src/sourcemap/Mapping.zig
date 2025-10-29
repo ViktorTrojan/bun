@@ -25,7 +25,7 @@ pub const MappingWithoutName = struct {
 
 pub const List = struct {
     impl: Value = .{ .without_names = .{} },
-    names: []const bun.Semver.String = &[_]bun.Semver.String{},
+    names: []const bun.semver.String = &[_]bun.semver.String{},
     names_buffer: bun.ByteList = .{},
 
     pub const Value = union(enum) {
@@ -195,7 +195,7 @@ pub const List = struct {
         if (i >= this.names.len) return null;
 
         if (this.impl == .with_names) {
-            const str: *const bun.Semver.String = &this.names[i];
+            const str: *const bun.semver.String = &this.names[i];
             return str.slice(this.names_buffer.slice());
         }
 
@@ -204,7 +204,7 @@ pub const List = struct {
 
     pub fn memoryCost(this: *const List) usize {
         return this.impl.memoryCost() + this.names_buffer.memoryCost() +
-            (this.names.len * @sizeOf(bun.Semver.String));
+            (this.names.len * @sizeOf(bun.semver.String));
     }
 
     pub fn ensureTotalCapacity(this: *List, allocator: std.mem.Allocator, count: usize) !void {

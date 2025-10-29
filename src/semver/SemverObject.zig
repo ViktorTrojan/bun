@@ -134,6 +134,6 @@ const default_allocator = bun.default_allocator;
 const jsc = bun.jsc;
 const strings = bun.strings;
 
-const Query = bun.Semver.Query;
-const SlicedString = bun.Semver.SlicedString;
-const Version = bun.Semver.Version;
+const Query = bun.semver.Query;
+const SlicedString = bun.semver.SlicedString;
+const Version = bun.semver.Version;

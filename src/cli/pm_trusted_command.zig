@@ -454,4 +454,4 @@ const Output = bun.Output;
 const Progress = bun.Progress;
 const logger = bun.logger;
 const strings = bun.strings;
-const String = bun.Semver.String;
+const String = bun.semver.String;

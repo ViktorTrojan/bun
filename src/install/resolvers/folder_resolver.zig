@@ -348,5 +348,5 @@ const JSAst = bun.ast;
 const logger = bun.logger;
 const strings = bun.strings;
 
-const Semver = bun.Semver;
-const String = bun.Semver.String;
+const Semver = bun.semver;
+const String = bun.semver.String;

@@ -586,7 +586,7 @@ const Global = bun.Global;
 const Output = bun.Output;
 const PackageManager = bun.PackageManager;
 const ThreadPool = bun.ThreadPool;
-const String = bun.Semver.String;
+const String = bun.semver.String;
 const Task = bun.install.Task;
 
 const logger = bun.logger;

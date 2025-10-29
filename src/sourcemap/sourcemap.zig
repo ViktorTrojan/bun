@@ -186,7 +186,7 @@ pub fn parseJSON(
         if (hint == .all and hint.all.include_names and map_data.mappings.impl == .with_names) {
             if (json.get("names")) |names| {
                 if (names.data == .e_array) {
-                    var names_list = try std.ArrayListUnmanaged(bun.Semver.String).initCapacity(alloc, names.data.e_array.items.len);
+                    var names_list = try std.ArrayListUnmanaged(bun.semver.String).initCapacity(alloc, names.data.e_array.items.len);
                     errdefer names_list.deinit(alloc);
 
                     var names_buffer = std.ArrayListUnmanaged(u8){};
@@ -199,7 +199,7 @@ pub fn parseJSON(
 
                         const str = try item.data.e_string.string(arena);
 
-                        names_list.appendAssumeCapacity(try bun.Semver.String.initAppendIfNeeded(alloc, &names_buffer, str));
+                        names_list.appendAssumeCapacity(try bun.semver.String.initAppendIfNeeded(alloc, &names_buffer, str));
                     }
 
                     map_data.mappings.names = names_list.items;

@@ -376,7 +376,7 @@ const Syscall = bun.sys;
 const default_allocator = bun.default_allocator;
 const Command = bun.cli.Command;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;
 
 const Fs = bun.fs;

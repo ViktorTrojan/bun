@@ -72,7 +72,7 @@ pub const Meta = extern struct {
 const Integrity = @import("../../integrity.zig").Integrity;
 
 const bun = @import("bun");
-const String = bun.Semver.String;
+const String = bun.semver.String;
 
 const install = bun.install;
 const Npm = install.Npm;

@@ -1454,7 +1454,7 @@ const sys = bun.sys;
 const Bitset = bun.bit_set.DynamicBitSetUnmanaged;
 const Command = bun.cli.Command;
 const Mutex = bun.threading.Mutex;
-const String = bun.Semver.String;
+const String = bun.semver.String;
 
 const install = bun.install;
 const Bin = install.Bin;

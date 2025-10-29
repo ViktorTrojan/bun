@@ -1412,7 +1412,7 @@ const strings = bun.strings;
 const Bitset = bun.bit_set.DynamicBitSetUnmanaged;
 const Command = bun.cli.Command;
 const FileSystem = bun.fs.FileSystem;
-const String = bun.Semver.String;
+const String = bun.semver.String;
 
 const install = bun.install;
 const Bin = install.Bin;

@@ -878,9 +878,9 @@ pub const FormData = struct {
     const log = Output.scoped(.FormData, .visible);
 
     pub const Map = std.ArrayHashMapUnmanaged(
-        bun.Semver.String,
+        bun.semver.String,
         Field.Entry,
-        bun.Semver.String.ArrayHashContext,
+        bun.semver.String.ArrayHashContext,
         false,
     );
 
@@ -962,9 +962,9 @@ pub const FormData = struct {
     }
 
     pub const Field = struct {
-        value: bun.Semver.String = .{},
-        filename: bun.Semver.String = .{},
-        content_type: bun.Semver.String = .{},
+        value: bun.semver.String = .{},
+        filename: bun.semver.String = .{},
+        content_type: bun.semver.String = .{},
         is_file: bool = false,
         zero_count: u8 = 0,
 
@@ -1064,7 +1064,7 @@ pub const FormData = struct {
             globalThis: *jsc.JSGlobalObject,
             form: *jsc.DOMFormData,
 
-            pub fn onEntry(wrap: *@This(), name: bun.Semver.String, field: Field, buf: []const u8) void {
+            pub fn onEntry(wrap: *@This(), name: bun.semver.String, field: Field, buf: []const u8) void {
                 const value_str = field.value.slice(buf);
                 var key = jsc.ZigString.initUTF8(name.slice(buf));
 
@@ -1145,13 +1145,13 @@ pub const FormData = struct {
         ctx: Ctx,
         comptime iterator: fn (
             Ctx,
-            bun.Semver.String,
+            bun.semver.String,
             Field,
             string,
         ) void,
     ) !void {
         var slice = input;
-        var subslicer = bun.Semver.SlicedString.init(input, input);
+        var subslicer = bun.semver.SlicedString.init(input, input);
 
         var buf: [76]u8 = undefined;
         {
@@ -1180,8 +1180,8 @@ pub const FormData = struct {
             remain = remain[header_end + 4 ..];
 
             var field = Field{};
-            var name: bun.Semver.String = .{};
-            var filename: ?bun.Semver.String = null;
+            var name: bun.semver.String = .{};
+            var filename: ?bun.semver.String = null;
             var header_chunk = header;
             var is_file = false;
             while (header_chunk.len > 0 and (filename == null or name.len() == 0)) {

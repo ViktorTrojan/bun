@@ -223,7 +223,7 @@ const Environment = bun.Environment;
 const IdentityContext = bun.IdentityContext;
 const assert = bun.assert;
 const strings = bun.strings;
-const String = bun.Semver.String;
+const String = bun.semver.String;
 
 const PackageID = bun.install.PackageID;
 const Resolution = bun.install.Resolution;

@@ -2164,6 +2164,6 @@ const logger = bun.logger;
 const strings = bun.strings;
 const api = bun.schema.api;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const String = Semver.String;
 const Version = Semver.Version;

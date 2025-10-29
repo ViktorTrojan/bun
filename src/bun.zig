@@ -1473,7 +1473,7 @@ pub fn sliceTo(pointer: anytype, comptime end: std.meta.Elem(@TypeOf(pointer))) 
     }
 }
 
-pub const Semver = @import("./semver.zig");
+pub const semver = @import("./semver.zig");
 pub const ImportRecord = @import("./import_record.zig").ImportRecord;
 pub const ImportKind = @import("./import_record.zig").ImportKind;
 
@@ -2939,7 +2939,7 @@ pub inline fn markPosixOnly() if (Environment.isPosix) void else noreturn {
     @panic("Assertion failure: this function should only be accessible on POSIX.");
 }
 
-pub fn linuxKernelVersion() Semver.Version {
+pub fn linuxKernelVersion() semver.Version {
     if (comptime !Environment.isLinux) @compileError("linuxKernelVersion() is only available on Linux");
     return analytics.GenerateHeader.GeneratePlatform.kernelVersion();
 }

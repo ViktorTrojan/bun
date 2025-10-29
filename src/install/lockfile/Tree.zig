@@ -674,7 +674,7 @@ const assert = bun.assert;
 const logger = bun.logger;
 const z_allocator = bun.z_allocator;
 const Bitset = bun.bit_set.DynamicBitSetUnmanaged;
-const String = bun.Semver.String;
+const String = bun.semver.String;
 
 const install = bun.install;
 const Dependency = install.Dependency;

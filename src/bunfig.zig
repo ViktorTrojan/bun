@@ -576,6 +576,13 @@ pub const Bunfig = struct {
                         }
                     }
 
+                    if (install_obj.get("configVersion")) |config_version_expr| {
+                        install.config_version = try .fromExpr(config_version_expr);
+                        if (install.config_version == null) {
+                            try this.addError(config_version_expr.loc, "Expected a string matching a Bun version 0.0.15 to latest");
+                        }
+                    }
+
                     if (install_obj.get("lockfile")) |lockfile_expr| {
                         if (lockfile_expr.get("print")) |lockfile| {
                             try this.expectString(lockfile);

@@ -27,7 +27,13 @@ pub const Stringifier = struct {
     //     _ = this;
     // }
 
-    pub fn saveFromBinary(allocator: std.mem.Allocator, lockfile: *BinaryLockfile, load_result: *const LoadResult, writer: anytype) @TypeOf(writer).Error!void {
+    pub fn saveFromBinary(
+        allocator: std.mem.Allocator,
+        lockfile: *BinaryLockfile,
+        load_result: *const LoadResult,
+        options: *const PackageManager.Options,
+        writer: anytype,
+    ) @TypeOf(writer).Error!void {
         const buf = lockfile.buffers.string_bytes.items;
         const extern_strings = lockfile.buffers.extern_strings.items;
         const deps_buf = lockfile.buffers.dependencies.items;
@@ -89,6 +95,10 @@ pub const Stringifier = struct {
         try incIndent(writer, indent);
         {
             try writer.print("\"lockfileVersion\": {d},\n", .{@intFromEnum(Version.current)});
+            try writeIndent(writer, indent);
+
+            const config_version: PackageManager.Options.ConfigVersion = options.config_version orelse .current;
+            try writer.print("\"configVersion\": {d},\n", .{@intFromEnum(config_version)});
             try writeIndent(writer, indent);
 
             try writer.writeAll("\"workspaces\": {\n");
@@ -983,6 +993,7 @@ const workspace_dependency_groups = [4]struct { []const u8, Dependency.Behavior 
 };
 
 const ParseError = OOM || error{
+    InvalidConfigVersion,
     InvalidLockfileVersion,
     UnknownLockfileVersion,
     InvalidOptionalValue,
@@ -1151,6 +1162,14 @@ pub fn parseIntoBinaryLockfile(
     };
 
     lockfile.text_lockfile_version = lockfile_version;
+
+    // configVersion is allowed to not exist
+    if (root.get("configVersion")) |config_version_expr| {
+        lockfile.config_version = try PackageManager.Options.ConfigVersion.fromExpr(config_version_expr) orelse {
+            try log.addError(source, config_version_expr.loc, "Invalid or unknown config version");
+            return error.InvalidConfigVersion;
+        };
+    }
 
     var string_buf = lockfile.stringBuf();
 
@@ -2213,7 +2232,7 @@ const logger = bun.logger;
 const strings = bun.strings;
 const Expr = bun.js_parser.Expr;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const ExternalString = Semver.ExternalString;
 const String = Semver.String;
 

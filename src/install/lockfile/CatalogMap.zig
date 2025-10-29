@@ -464,7 +464,7 @@ const OOM = bun.OOM;
 const logger = bun.logger;
 const strings = bun.strings;
 const Expr = bun.ast.Expr;
-const String = bun.Semver.String;
+const String = bun.semver.String;
 
 const Dependency = bun.install.Dependency;
 const Lockfile = bun.install.Lockfile;

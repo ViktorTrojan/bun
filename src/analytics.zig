@@ -350,4 +350,4 @@ const analytics = @import("./analytics/schema.zig").analytics;
 
 const bun = @import("bun");
 const Environment = bun.Environment;
-const Semver = bun.Semver;
+const Semver = bun.semver;

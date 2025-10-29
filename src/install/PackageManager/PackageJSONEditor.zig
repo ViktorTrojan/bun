@@ -783,7 +783,7 @@ const std = @import("std");
 
 const bun = @import("bun");
 const Environment = bun.Environment;
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const logger = bun.logger;
 const strings = bun.strings;
 

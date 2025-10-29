@@ -227,7 +227,7 @@ const OOM = bun.OOM;
 const Output = bun.Output;
 const strings = bun.strings;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const SlicedString = Semver.SlicedString;
 const String = Semver.String;
 

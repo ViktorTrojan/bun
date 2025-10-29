@@ -69,5 +69,5 @@ const bun = @import("bun");
 const Environment = bun.Environment;
 const PackageNameHash = bun.install.PackageNameHash;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const ExternalString = Semver.ExternalString;

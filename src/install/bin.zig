@@ -1091,6 +1091,6 @@ const OOM = bun.OOM;
 const path = bun.path;
 const strings = bun.strings;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const ExternalString = Semver.ExternalString;
 const String = Semver.String;

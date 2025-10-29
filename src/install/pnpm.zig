@@ -1564,7 +1564,7 @@ const strings = bun.strings;
 const sys = bun.sys;
 const YAML = bun.interchange.yaml.YAML;
 
-const Semver = bun.Semver;
+const Semver = bun.semver;
 const ExternalString = Semver.ExternalString;
 const String = Semver.String;
 const stringHash = String.Builder.stringHash;
