@@ -2232,10 +2232,6 @@ const logger = bun.logger;
 const strings = bun.strings;
 const Expr = bun.js_parser.Expr;
 
-const Semver = bun.semver;
-const ExternalString = Semver.ExternalString;
-const String = Semver.String;
-
 const Install = bun.install;
 const Bin = Install.Bin;
 const Dependency = Install.Dependency;
@@ -2255,3 +2251,7 @@ const Meta = BinaryLockfile.Package.Meta;
 
 const Npm = Install.Npm;
 const Negatable = Npm.Negatable;
+
+const Semver = bun.semver;
+const ExternalString = Semver.ExternalString;
+const String = Semver.String;

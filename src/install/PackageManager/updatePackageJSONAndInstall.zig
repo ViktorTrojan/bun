@@ -746,9 +746,6 @@ const Command = bun.cli.Command;
 const File = bun.sys.File;
 const PackageNameHash = bun.install.PackageNameHash;
 
-const Semver = bun.semver;
-const String = Semver.String;
-
 const Fs = bun.fs;
 const FileSystem = Fs.FileSystem;
 
@@ -759,3 +756,6 @@ const PatchCommitResult = PackageManager.PatchCommitResult;
 const Subcommand = PackageManager.Subcommand;
 const UpdateRequest = PackageManager.UpdateRequest;
 const attemptToCreatePackageJSON = PackageManager.attemptToCreatePackageJSON;
+
+const Semver = bun.semver;
+const String = Semver.String;

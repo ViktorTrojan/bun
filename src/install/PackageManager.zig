@@ -1288,9 +1288,6 @@ const transpiler = bun.transpiler;
 const Api = bun.schema.api;
 const File = bun.sys.File;
 
-const Semver = bun.semver;
-const String = Semver.String;
-
 const BunArguments = bun.cli.Arguments;
 const Command = bun.cli.Command;
 
@@ -1321,3 +1318,6 @@ const initializeStore = bun.install.initializeStore;
 
 const Lockfile = bun.install.Lockfile;
 const Package = Lockfile.Package;
+
+const Semver = bun.semver;
+const String = Semver.String;

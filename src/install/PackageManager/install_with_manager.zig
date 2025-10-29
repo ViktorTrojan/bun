@@ -1138,9 +1138,6 @@ const default_allocator = bun.default_allocator;
 const strings = bun.strings;
 const Command = bun.cli.Command;
 
-const Semver = bun.semver;
-const String = Semver.String;
-
 const Fs = bun.fs;
 const FileSystem = Fs.FileSystem;
 
@@ -1161,3 +1158,6 @@ const Package = Lockfile.Package;
 const PackageManager = bun.install.PackageManager;
 const Options = PackageManager.Options;
 const WorkspaceFilter = PackageManager.WorkspaceFilter;
+
+const Semver = bun.semver;
+const String = Semver.String;

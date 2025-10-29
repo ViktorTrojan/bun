@@ -2174,11 +2174,6 @@ const z_allocator = bun.z_allocator;
 const Bitset = bun.bit_set.DynamicBitSetUnmanaged;
 const File = bun.sys.File;
 
-const Semver = bun.semver;
-const ExternalString = Semver.ExternalString;
-const SlicedString = Semver.SlicedString;
-const String = Semver.String;
-
 const Install = bun.install;
 const DependencyID = Install.DependencyID;
 const ExternalSlice = Install.ExternalSlice;
@@ -2194,3 +2189,8 @@ const invalid_package_id = Install.invalid_package_id;
 
 const PackageManager = Install.PackageManager;
 const WorkspaceFilter = PackageManager.WorkspaceFilter;
+
+const Semver = bun.semver;
+const ExternalString = Semver.ExternalString;
+const SlicedString = Semver.SlicedString;
+const String = Semver.String;

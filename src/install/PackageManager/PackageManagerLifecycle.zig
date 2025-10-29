@@ -376,9 +376,6 @@ const Syscall = bun.sys;
 const default_allocator = bun.default_allocator;
 const Command = bun.cli.Command;
 
-const Semver = bun.semver;
-const String = Semver.String;
-
 const Fs = bun.fs;
 const FileSystem = Fs.FileSystem;
 
@@ -391,3 +388,6 @@ const invalid_package_id = bun.install.invalid_package_id;
 
 const Lockfile = bun.install.Lockfile;
 const Package = Lockfile.Package;
+
+const Semver = bun.semver;
+const String = Semver.String;

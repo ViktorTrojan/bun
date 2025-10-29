@@ -621,9 +621,6 @@ const logger = bun.logger;
 const strings = bun.strings;
 const z_allocator = bun.z_allocator;
 
-const Semver = bun.semver;
-const String = bun.semver.String;
-
 const install = bun.install;
 const Dependency = install.Dependency;
 const PackageID = install.PackageID;
@@ -638,3 +635,6 @@ const PackageIndex = Lockfile.PackageIndex;
 const Stream = Lockfile.Stream;
 const StringPool = Lockfile.StringPool;
 const VersionHashMap = Lockfile.VersionHashMap;
+
+const Semver = bun.semver;
+const String = bun.semver.String;

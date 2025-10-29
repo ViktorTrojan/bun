@@ -1041,6 +1041,7 @@ const Output = bun.Output;
 const Path = bun.path;
 const URL = bun.URL;
 const logger = bun.logger;
+const semver = bun.semver;
 const strings = bun.strings;
 const Api = bun.schema.api;
 
@@ -1054,4 +1055,3 @@ const patch = bun.install.patch;
 
 const PackageManager = bun.install.PackageManager;
 const Subcommand = bun.install.PackageManager.Subcommand;
-const semver = bun.semver;

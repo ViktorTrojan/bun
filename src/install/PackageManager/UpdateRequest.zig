@@ -254,10 +254,6 @@ const jsc = bun.jsc;
 const logger = bun.logger;
 const strings = bun.strings;
 
-const Semver = bun.semver;
-const SlicedString = Semver.SlicedString;
-const String = Semver.String;
-
 const Dependency = bun.install.Dependency;
 const Lockfile = bun.install.Lockfile;
 const PackageID = bun.install.PackageID;
@@ -266,3 +262,7 @@ const invalid_package_id = bun.install.invalid_package_id;
 
 const PackageManager = bun.install.PackageManager;
 const UpdateRequest = PackageManager.UpdateRequest;
+
+const Semver = bun.semver;
+const SlicedString = Semver.SlicedString;
+const String = Semver.String;

@@ -1564,11 +1564,6 @@ const strings = bun.strings;
 const sys = bun.sys;
 const YAML = bun.interchange.yaml.YAML;
 
-const Semver = bun.semver;
-const ExternalString = Semver.ExternalString;
-const String = Semver.String;
-const stringHash = String.Builder.stringHash;
-
 const JSAst = bun.ast;
 const E = JSAst.E;
 const Expr = JSAst.Expr;
@@ -1579,6 +1574,11 @@ const PackageID = bun.install.PackageID;
 const PackageManager = bun.install.PackageManager;
 const invalid_package_id = bun.install.invalid_package_id;
 const Negatable = bun.install.Npm.Negatable;
+
+const Semver = bun.semver;
+const ExternalString = Semver.ExternalString;
+const String = Semver.String;
+const stringHash = String.Builder.stringHash;
 
 const std = @import("std");
 const os = std.os;

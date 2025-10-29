@@ -227,10 +227,6 @@ const OOM = bun.OOM;
 const Output = bun.Output;
 const strings = bun.strings;
 
-const Semver = bun.semver;
-const SlicedString = Semver.SlicedString;
-const String = Semver.String;
-
 const Dependency = bun.install.Dependency;
 const DependencyID = bun.install.DependencyID;
 const FolderResolution = bun.install.FolderResolution;
@@ -241,3 +237,7 @@ const PackageManager = bun.install.PackageManager;
 const PackageNameHash = bun.install.PackageNameHash;
 const Resolution = bun.install.Resolution;
 const invalid_package_id = bun.install.invalid_package_id;
+
+const Semver = bun.semver;
+const SlicedString = Semver.SlicedString;
+const String = Semver.String;

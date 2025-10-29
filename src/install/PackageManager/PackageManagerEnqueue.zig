@@ -1874,9 +1874,6 @@ const ThreadPool = bun.ThreadPool;
 const logger = bun.logger;
 const strings = bun.strings;
 
-const Semver = bun.semver;
-const String = Semver.String;
-
 const Fs = bun.fs;
 const FileSystem = Fs.FileSystem;
 
@@ -1911,3 +1908,6 @@ const assignResolution = PackageManager.assignResolution;
 const assignRootResolution = PackageManager.assignRootResolution;
 const debug = PackageManager.debug;
 const failRootResolution = PackageManager.failRootResolution;
+
+const Semver = bun.semver;
+const String = Semver.String;

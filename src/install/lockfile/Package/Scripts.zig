@@ -372,9 +372,6 @@ const logger = bun.logger;
 const strings = bun.strings;
 const Expr = bun.ast.Expr;
 
-const Semver = bun.semver;
-const String = Semver.String;
-
 const install = bun.install;
 const Resolution = bun.install.Resolution;
 const initializeStore = install.initializeStore;
@@ -382,3 +379,6 @@ const initializeStore = install.initializeStore;
 const Lockfile = install.Lockfile;
 const Package = Lockfile.Package;
 const StringBuilder = Lockfile.StringBuilder;
+
+const Semver = bun.semver;
+const String = Semver.String;

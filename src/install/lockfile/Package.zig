@@ -2214,10 +2214,6 @@ const strings = bun.strings;
 const Expr = bun.ast.Expr;
 const FileSystem = bun.fs.FileSystem;
 
-const Semver = bun.semver;
-const ExternalString = Semver.ExternalString;
-const String = Semver.String;
-
 const install = bun.install;
 const Aligner = install.Aligner;
 const Bin = install.Bin;
@@ -2245,3 +2241,7 @@ const StringBuilder = Lockfile.StringBuilder;
 const TrustedDependenciesSet = Lockfile.TrustedDependenciesSet;
 const assertNoUninitializedPadding = Lockfile.assertNoUninitializedPadding;
 const default_trusted_dependencies = Lockfile.default_trusted_dependencies;
+
+const Semver = bun.semver;
+const ExternalString = Semver.ExternalString;
+const String = Semver.String;

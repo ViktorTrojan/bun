@@ -2001,10 +2001,6 @@ const strings = bun.strings;
 const Command = bun.cli.Command;
 const FileSystem = bun.fs.FileSystem;
 
-const Semver = bun.semver;
-const SlicedString = Semver.SlicedString;
-const String = Semver.String;
-
 const JSAst = bun.ast;
 const E = JSAst.E;
 const Expr = JSAst.Expr;
@@ -2018,3 +2014,7 @@ const Behavior = Install.Dependency.Behavior;
 const PackageManager = Install.PackageManager;
 const PackageJSONEditor = PackageManager.PackageJSONEditor;
 const WorkspaceFilter = PackageManager.WorkspaceFilter;
+
+const Semver = bun.semver;
+const SlicedString = Semver.SlicedString;
+const String = Semver.String;

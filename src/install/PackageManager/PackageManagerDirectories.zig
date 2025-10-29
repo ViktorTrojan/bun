@@ -769,9 +769,6 @@ const default_allocator = bun.default_allocator;
 const Command = bun.cli.Command;
 const File = bun.sys.File;
 
-const Semver = bun.semver;
-const String = Semver.String;
-
 const Fs = bun.fs;
 const FileSystem = Fs.FileSystem;
 
@@ -783,3 +780,6 @@ const Resolution = bun.install.Resolution;
 const PackageManager = bun.install.PackageManager;
 const Options = PackageManager.Options;
 const ProgressStrings = PackageManager.ProgressStrings;
+
+const Semver = bun.semver;
+const String = Semver.String;

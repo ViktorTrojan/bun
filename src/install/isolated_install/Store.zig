@@ -548,9 +548,6 @@ const bun = @import("bun");
 const OOM = bun.OOM;
 const Output = bun.Output;
 
-const Semver = bun.semver;
-const String = Semver.String;
-
 const install = bun.install;
 const Dependency = install.Dependency;
 const DependencyID = install.DependencyID;
@@ -559,3 +556,6 @@ const invalid_dependency_id = install.invalid_dependency_id;
 
 const Lockfile = install.Lockfile;
 const Package = Lockfile.Package;
+
+const Semver = bun.semver;
+const String = Semver.String;

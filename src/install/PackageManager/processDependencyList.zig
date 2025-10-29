@@ -327,10 +327,6 @@ const Path = bun.path;
 const Syscall = bun.sys;
 const logger = bun.logger;
 
-const Semver = bun.semver;
-const ExternalString = Semver.ExternalString;
-const String = Semver.String;
-
 const DependencyID = bun.install.DependencyID;
 const ExtractData = bun.install.ExtractData;
 const Features = bun.install.Features;
@@ -349,3 +345,7 @@ const Options = PackageManager.Options;
 const TaskCallbackList = PackageManager.TaskCallbackList;
 const assignRootResolution = PackageManager.assignRootResolution;
 const failRootResolution = PackageManager.failRootResolution;
+
+const Semver = bun.semver;
+const ExternalString = Semver.ExternalString;
+const String = Semver.String;

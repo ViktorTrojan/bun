@@ -1129,9 +1129,9 @@ const logger = bun.logger;
 const strings = bun.strings;
 const File = bun.sys.File;
 
+const JSAst = bun.ast;
+const E = JSAst.E;
+
 const Semver = bun.semver;
 const String = Semver.String;
 const stringHash = String.Builder.stringHash;
-
-const JSAst = bun.ast;
-const E = JSAst.E;

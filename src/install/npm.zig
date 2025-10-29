@@ -2788,10 +2788,10 @@ const strings = bun.strings;
 const File = bun.sys.File;
 const api = bun.schema.api;
 
+const ExternalPackageNameHashList = bun.install.ExternalPackageNameHashList;
+const PackageNameHash = bun.install.PackageNameHash;
+
 const Semver = bun.semver;
 const ExternalString = Semver.ExternalString;
 const SlicedString = Semver.SlicedString;
 const String = Semver.String;
-
-const ExternalPackageNameHashList = bun.install.ExternalPackageNameHashList;
-const PackageNameHash = bun.install.PackageNameHash;
