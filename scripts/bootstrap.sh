@@ -1033,7 +1033,7 @@ install_build_essentials() {
 	install_llvm
 	install_osxcross
 	install_gcc
-	install_ccache
+	install_sccache
 	install_rust
 	install_docker
 }
@@ -1144,10 +1144,10 @@ install_gcc() {
 	execute_sudo ln -sf $(which llvm-symbolizer-$llvm_v) /usr/bin/llvm-symbolizer
 }
 
-install_ccache() {
+install_sccache() {
 	case "$pm" in
 	apt | apk | brew)
-		install_packages ccache
+		install_packages sccache
 		;;
 	esac
 }

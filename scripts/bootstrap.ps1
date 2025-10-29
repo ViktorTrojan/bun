@@ -274,7 +274,7 @@ function Install-Build-Essentials {
     cmake `
     make `
     ninja `
-    ccache `
+    sccache `
     python `
     golang `
     nasm `

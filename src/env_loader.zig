@@ -223,14 +223,14 @@ pub const Loader = struct {
 
     fn loadCCachePathImpl(this: *Loader, fs: *Fs.FileSystem) !void {
 
-        // if they have ccache installed, put it in env variable `CMAKE_CXX_COMPILER_LAUNCHER` so
+        // if they have sccache installed, put it in env variable `CMAKE_CXX_COMPILER_LAUNCHER` so
         // cmake can use it to hopefully speed things up
         var buf: bun.PathBuffer = undefined;
         const ccache_path = bun.which(
             &buf,
             this.get("PATH") orelse return,
             fs.top_level_dir,
-            "ccache",
+            "sccache",
         ) orelse "";
 
         if (ccache_path.len > 0) {

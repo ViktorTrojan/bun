@@ -23,19 +23,19 @@ Using your system's package manager, install Bun's dependencies:
 {% codetabs group="os" %}
 
 ```bash#macOS (Homebrew)
-$ brew install automake ccache cmake coreutils gnu-sed go icu4c libiconv libtool ninja pkg-config rust ruby
+$ brew install automake sccache cmake coreutils gnu-sed go icu4c libiconv libtool ninja pkg-config rust ruby
 ```
 
 ```bash#Ubuntu/Debian
-$ sudo apt install curl wget lsb-release software-properties-common cargo ccache cmake git golang libtool ninja-build pkg-config rustc ruby-full xz-utils
+$ sudo apt install curl wget lsb-release software-properties-common cargo sccache cmake git golang libtool ninja-build pkg-config rustc ruby-full xz-utils
 ```
 
 ```bash#Arch
-$ sudo pacman -S base-devel ccache cmake git go libiconv libtool make ninja pkg-config python rust sed unzip ruby
+$ sudo pacman -S base-devel sccache cmake git go libiconv libtool make ninja pkg-config python rust sed unzip ruby
 ```
 
 ```bash#Fedora
-$ sudo dnf install cargo clang19 llvm19 lld19 ccache cmake git golang libtool ninja-build pkg-config rustc ruby libatomic-static libstdc++-static sed unzip which libicu-devel 'perl(Math::BigInt)'
+$ sudo dnf install cargo clang19 llvm19 lld19 sccache cmake git golang libtool ninja-build pkg-config rustc ruby libatomic-static libstdc++-static sed unzip which libicu-devel 'perl(Math::BigInt)'
 ```
 
 ```bash#openSUSE Tumbleweed
@@ -331,13 +331,13 @@ $ bun run build -DUSE_STATIC_LIBATOMIC=OFF
 
 The built version of Bun may not work on other systems if compiled this way.
 
-### ccache conflicts with building TinyCC on macOS
+### sccache conflicts with building TinyCC on macOS
 
-If you run into issues with `ccache` when building TinyCC, try reinstalling ccache
+If you run into issues with `sccache` when building TinyCC, try reinstalling sccache
 
 ```bash
-brew uninstall ccache
-brew install ccache
+brew uninstall sccache
+brew install sccache
 ```
 
 ## Using bun-debug
