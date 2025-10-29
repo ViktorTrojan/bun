@@ -441,6 +441,112 @@ configVersion = 0
       // New workspace should get configVersion 1 (current version)
       expect(lockfileContent).toContain('"configVersion": 1');
     });
+
+    test("configVersion 1 uses hoisted linker for non-workspace project", async () => {
+      const urls: string[] = [];
+      setHandler(dummyRegistry(urls));
+
+      // Override bunfig to set configVersion to 1
+      await writeFile(
+        join(package_dir, "bunfig.toml"),
+        `
+[install]
+cache = false
+registry = "${root_url}"
+saveTextLockfile = true
+configVersion = 1
+`,
+      );
+
+      // Create a NON-workspace project
+      await writeFile(
+        join(package_dir, "package.json"),
+        JSON.stringify({
+          name: "non-workspace-project",
+          version: "1.0.0",
+          dependencies: {
+            bar: "0.0.2",
+          },
+        }),
+      );
+
+      const { stdout, stderr, exited } = Bun.spawn({
+        cmd: [bunExe(), "install"],
+        cwd: package_dir,
+        env: bunEnv,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const [out, err, exitCode] = await Promise.all([stdout.text(), stderr.text(), exited]);
+
+      expect(out).not.toContain("error:");
+      expect(exitCode).toBe(0);
+
+      const lockfilePath = join(package_dir, "bun.lock");
+      const lockfile = Bun.file(lockfilePath);
+      const lockfileContent = await lockfile.text();
+
+      // configVersion 1 without workspaces should still use hoisted linker
+      expect(lockfileContent).toContain('"configVersion": 1');
+
+      // Check that node_modules uses hoisted structure (bar at root)
+      const barExists = await Bun.file(join(package_dir, "node_modules", "bar", "package.json")).exists();
+      expect(barExists).toBe(true);
+    });
+
+    test("configVersion 0 uses hoisted linker for non-workspace project", async () => {
+      const urls: string[] = [];
+      setHandler(dummyRegistry(urls));
+
+      // Override bunfig to set configVersion to 0
+      await writeFile(
+        join(package_dir, "bunfig.toml"),
+        `
+[install]
+cache = false
+registry = "${root_url}"
+saveTextLockfile = true
+configVersion = 0
+`,
+      );
+
+      // Create a NON-workspace project
+      await writeFile(
+        join(package_dir, "package.json"),
+        JSON.stringify({
+          name: "non-workspace-project",
+          version: "1.0.0",
+          dependencies: {
+            bar: "0.0.2",
+          },
+        }),
+      );
+
+      const { stdout, stderr, exited } = Bun.spawn({
+        cmd: [bunExe(), "install"],
+        cwd: package_dir,
+        env: bunEnv,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const [out, err, exitCode] = await Promise.all([stdout.text(), stderr.text(), exited]);
+
+      expect(out).not.toContain("error:");
+      expect(exitCode).toBe(0);
+
+      const lockfilePath = join(package_dir, "bun.lock");
+      const lockfile = Bun.file(lockfilePath);
+      const lockfileContent = await lockfile.text();
+
+      // configVersion 0 should always use hoisted linker
+      expect(lockfileContent).toContain('"configVersion": 0');
+
+      // Check that node_modules uses hoisted structure (bar at root)
+      const barExists = await Bun.file(join(package_dir, "node_modules", "bar", "package.json")).exists();
+      expect(barExists).toBe(true);
+    });
   });
 
   describe("binary lockfile (bun.lockb)", () => {
